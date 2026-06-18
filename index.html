@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3b82f6">
     <link rel="manifest" href="manifest.json">
-	<link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="icon-192.png">
     
     <title>SkyNet</title>
@@ -13,91 +13,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <link rel="stylesheet" href="style.css">
+    
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-    <style>
-        :root {
-            --bg-color: #f3f4f6; --text-color: #1f2937; --card-bg: #ffffff;
-            --border-color: #e5e7eb; --primary: #3b82f6; --primary-dark: #2563eb;
-            --success: #10b981; --danger: #ef4444; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-
-        [data-theme="dark"] {
-            --bg-color: #0f172a; --text-color: #f8fafc; --card-bg: #1e293b;
-            --border-color: #334155; --primary: #60a5fa; --primary-dark: #3b82f6;
-            --shadow: 0 4px 6px -1px rgba(0,0,0,0.5);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-color); color: var(--text-color); transition: 0.3s; display: flex; flex-direction: column; min-height: 100vh; }
-
-        header { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 1.5rem; background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
-        .brand { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-        .brand i { color: var(--primary); }
-        .header-actions { display: flex; gap: 15px; align-items: center; }
-        
-        #install-btn { display: none; background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
-        
-        .theme-btn { background: transparent; border: none; font-size: 1.2rem; color: var(--text-color); cursor: pointer; }
-
-        .container { padding: 1.5rem; flex-grow: 1; max-width: 600px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 1.2rem; }
-        .card { background: var(--card-bg); border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border-color); text-align: center; }
-        .card h3 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-color); font-weight: 600; }
-        .id-display { background: var(--bg-color); padding: 1rem; border-radius: 12px; font-size: 1.8rem; font-weight: 700; letter-spacing: 3px; color: var(--primary); margin-bottom: 1rem; }
-        
-        .btn-group { display: flex; gap: 10px; margin-bottom: 0.5rem; }
-        .btn { flex: 1; padding: 1rem; border-radius: 12px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-danger { background: var(--danger); color: white; display: none; }
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        #qr-box { display: none; margin-top: 1.5rem; padding: 1.5rem; background: white; border-radius: 12px; border: 2px dashed var(--primary); }
-        #qrcode { display: flex; justify-content: center; margin-top: 10px; }
-
-        #transfer-area { display: none; }
-        .status-badge { display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; background: rgba(16, 185, 129, 0.1); color: var(--success); }
-        .status-badge.disconnected { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-
-        .text-send-area { display: flex; gap: 8px; margin-bottom: 1rem; }
-        .text-input { flex-grow: 1; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.9rem; outline: none; }
-        .btn-send-text { background: var(--primary); color: white; border: none; border-radius: 10px; padding: 0 1rem; cursor: pointer; }
-
-        /* Gaya Khusus Kotak Obrolan Moderen */
-        .chat-container { height: 180px; overflow-y: auto; background: var(--bg-color); border-radius: 12px; padding: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; }
-
-        .file-upload-wrapper { position: relative; margin-bottom: 1rem; }
-        .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
-        .file-upload-ui { border: 2px dashed var(--primary); padding: 2rem 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500; transition: 0.3s; position: relative; z-index: 1; }
-        .file-upload-ui.dragover { background: rgba(59, 130, 246, 0.2); border-color: var(--primary-dark); transform: scale(1.02); }
-        .file-upload-ui i { font-size: 2.5rem; margin-bottom: 10px; display: block; pointer-events: none; }
-        .file-upload-ui span { pointer-events: none; }
-
-        .file-list { text-align: left; background: var(--bg-color); padding: 1rem; border-radius: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 1rem; display: none; }
-        .file-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-        .file-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-        .file-thumb { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: var(--border-color); display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--primary); flex-shrink: 0; }
-        .file-info { flex-grow: 1; overflow: hidden; }
-        .file-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .file-size { font-size: 0.8rem; opacity: 0.7; }
-
-        .progress-container { width: 100%; background: var(--border-color); border-radius: 10px; height: 12px; overflow: hidden; margin-top: 1rem; display: none; }
-        .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
-        .stats-area { display: none; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; font-weight: 600; color: var(--primary); }
-
-        .log-area { text-align: left; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
-        .log-area h4 { font-size: 0.9rem; color: #6b7280; margin-bottom: 10px; }
-        .log-list { font-size: 0.85rem; list-style: none; }
-        .log-list li { padding: 8px 0; display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px dashed var(--border-color); }
-        .log-list li:last-child { border-bottom: none; }
-        .log-list li i { margin-top: 3px; }
-        .copy-btn { margin-left: auto; background: var(--border-color); border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; color: var(--text-color); font-size: 0.75rem; }
-
-        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text-color); color: var(--bg-color); padding: 12px 24px; border-radius: 30px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; transition: 0.4s; opacity: 0; }
-        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-    </style>
 </head>
 <body>
 
@@ -122,7 +41,7 @@
                 <div id="qr-box"><div id="qrcode"></div></div>
             </div>
 
-			<div class="card" style="margin-top: 1.2rem;">
+            <div class="card" style="margin-top: 1.2rem;">
                 <h3>Hubungkan Manual</h3>
                 <div class="text-send-area" style="margin-bottom: 0;">
                     <input type="text" id="peer-id-input" class="text-input" placeholder="Masukkan 4 digit ID teman..." inputmode="numeric" pattern="[0-9]*" maxlength="4">
@@ -135,15 +54,8 @@
         </div>
 
         <div class="card" id="transfer-area">
-            <div class="status-badge" id="status-badge"><i class="fa-solid fa-shield-check"></i> Terhubung Aman (P2P)</div>
+            <div class="status-badge"><i class="fa-solid fa-file-shield"></i> Mode Transfer Berkas</div>
             
-            <div class="chat-container" id="chat-box"></div>
-
-            <div class="text-send-area">
-                <input type="text" id="chat-input" class="text-input" placeholder="Ketik pesan atau salin tautan...">
-                <button class="btn-send-text" id="btn-send-chat"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-
             <div class="file-upload-wrapper" id="drop-zone">
                 <div class="file-upload-ui" id="drop-ui">
                     <i class="fa-solid fa-cloud-arrow-up"></i><span>Ketuk atau Seret File ke Sini</span>
@@ -165,286 +77,34 @@
 
             <div class="log-area">
                 <h4>Riwayat Berkas Sesi Ini:</h4>
-                <ul class="log-list" id="transfer-log"><li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada aktivitas berkas.</li></ul>
+                <ul class="log-list" id="transfer-log"><li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada berkas terkirim/diterima.</li></ul>
+            </div>
+        </div>
+
+        <div id="chat-area">
+            <div class="chat-main-container">
+                <div class="chat-box-area" id="chat-box"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" class="text-input" placeholder="Tulis pesan rahasia...">
+                    <button class="btn-send-text" id="btn-send-chat" style="padding: 0 1.2rem;"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
             </div>
         </div>
     </div>
 
+    <nav class="bottom-nav" id="bottom-bar">
+        <div class="nav-item active" id="nav-file" onclick="switchPage('file')">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>File</span>
+        </div>
+        <div class="nav-item" id="nav-chat" onclick="switchPage('chat')">
+            <i class="fa-solid fa-comments"></i>
+            <span>Obrolan</span>
+        </div>
+    </nav>
+
     <div id="toast">Notifikasi</div>
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
-        }
-        let deferredPrompt;
-        const installBtn = document.getElementById('install-btn');
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block';
-        });
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') installBtn.style.display = 'none';
-                deferredPrompt = null;
-            }
-        });
-
-        const root = document.documentElement;
-        const themeBtn = document.getElementById('theme-toggle');
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        root.setAttribute('data-theme', savedTheme);
-        themeBtn.innerHTML = savedTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-        themeBtn.addEventListener('click', () => {
-            const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            root.setAttribute('data-theme', newTheme); localStorage.setItem('theme', newTheme);
-            themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-        });
-
-        let wakeLock = null;
-        async function requestWakeLock() { 
-            try { 
-                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); 
-            } catch (err) {} 
-        }
-        function releaseWakeLock() { 
-            if (wakeLock !== null) { wakeLock.release().then(() => wakeLock = null); } 
-        }
-
-        document.addEventListener('visibilitychange', async () => {
-            if (document.visibilityState === 'visible' && document.getElementById('progress-container').style.display === 'block') {
-                await requestWakeLock();
-            }
-        });
-
-        let peer = null; let conn = null; let myIdStr = ""; let qrGenerated = false;
-        const urlParams = new URLSearchParams(window.location.search);
-        const autoConnectId = urlParams.get('connect');
-        const randomId = Math.floor(1000 + Math.random() * 9000).toString();
-        
-        peer = new Peer(randomId, { debug: 1 });
-        peer.on('open', (id) => {
-            myIdStr = id; document.getElementById('my-id').innerText = id;
-            if(autoConnectId && autoConnectId !== id) { showToast("Menghubungkan..."); connectToPeer(autoConnectId); }
-        });
-        peer.on('error', (err) => {
-            document.getElementById('my-id').innerHTML = '<span style="color:var(--danger); font-size:1.2rem;">Gagal Konek Server</span>';
-            document.getElementById('status-wait').innerHTML = '<p style="color:var(--danger)">Server sibuk. Muat ulang.</p>'; showToast("Error: " + err.type);
-        });
-        peer.on('connection', (connection) => { 
-		    conn = connection; 
-		    conn.on('open', () => setupConnection()); 
-		});
-
-        function connectToPeer(targetId) {
-            conn = peer.connect(targetId);
-            conn.on('open', () => setupConnection()); conn.on('error', () => showToast("Gagal terhubung!"));
-        }
-
-		function connectManually() {
-            const inputField = document.getElementById('peer-id-input');
-            const targetId = inputField.value.trim();
-            
-            if (!targetId) {
-                showToast("Masukkan ID terlebih dahulu!");
-                return;
-            }
-            if (targetId === myIdStr) {
-                showToast("Tidak bisa konek ke ID sendiri!");
-                return;
-            }
-            
-            showToast("Menghubungkan ke " + targetId + "...");
-            connectToPeer(targetId);
-        }
-
-        function setupConnection() {
-            document.getElementById('connection-area').style.display = 'none'; document.getElementById('transfer-area').style.display = 'block';
-            showToast("Berhasil Terhubung!"); window.history.replaceState({}, document.title, window.location.pathname);
-            conn.on('data', handleIncomingData);
-            conn.on('close', () => {
-                releaseWakeLock(); const badge = document.getElementById('status-badge');
-                badge.className = 'status-badge disconnected'; badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Terputus!';
-                showToast("Teman keluar."); setTimeout(() => location.reload(), 3000);
-            });
-        }
-
-        function toggleQR() {
-            const qrBox = document.getElementById('qr-box');
-            if (qrBox.style.display === 'block') { qrBox.style.display = 'none'; } 
-            else {
-                qrBox.style.display = 'block';
-                if (!qrGenerated) {
-                    const inviteLink = window.location.origin + window.location.pathname + "?connect=" + myIdStr;
-                    new QRCode(document.getElementById("qrcode"), { text: inviteLink, width: 150, height: 150, colorDark: "#1f2937", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
-                    qrGenerated = true;
-                }
-            }
-        }
-
-        // Perbaikan: Logika Penerima Chat yang diperbarui menggunakan addChatMessage
-        function handleIncomingData(data) {
-            if (data.type === 'text') { 
-                // Mengarahkan tampilan ke gelembung obrolan visual chat-box
-                addChatMessage('Teman', data.content, false); 
-                showToast("Pesan diterima!"); 
-            }
-            else if (data.type === 'cancel') {
-                receiveBuffer = []; receivedSize = 0;
-                document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none';
-                addToLog(`Dibatalkan pengirim.`, false); showToast("Pengirim membatalkan."); releaseWakeLock();
-            }
-            else if (data.type === 'meta') {
-                incomingFileInfo = data; receiveBuffer = []; receivedSize = 0; requestWakeLock();
-                document.getElementById('progress-container').style.display = 'block'; document.getElementById('stats-area').style.display = 'flex';
-                rcvStartTime = performance.now(); rcvLastUpdate = rcvStartTime; rcvBytesSinceLastUpdate = 0;
-            } 
-            else if (data.type === 'chunk') {
-                receiveBuffer.push(data.data); receivedSize += data.data.byteLength; rcvBytesSinceLastUpdate += data.data.byteLength;
-                const now = performance.now(); const timeDiff = now - rcvLastUpdate;
-                if (timeDiff >= 250) {
-                    const percent = Math.round((receivedSize / incomingFileInfo.size) * 100); const speedBps = (rcvBytesSinceLastUpdate / (timeDiff / 1000));
-                    const etaSeconds = speedBps > 0 ? Math.ceil((incomingFileInfo.size - receivedSize) / speedBps) : 0;
-                    updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds)); rcvLastUpdate = now; rcvBytesSinceLastUpdate = 0;
-                }
-            } 
-            else if (data.type === 'eof') {
-                updateStats(100, "Menyimpan...", "0s"); const blob = new Blob(receiveBuffer, { type: incomingFileInfo.mime });
-                downloadFile(blob, incomingFileInfo.name); receiveBuffer = []; receivedSize = 0; 
-                addToLog(`Diterima: ${incomingFileInfo.name}`, true); releaseWakeLock();
-                setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
-            }
-        }
-
-        let filesQueue = []; let currentFileIndex = 0; let isCancelled = false; let activeObjectUrls = [];
-        const fileInput = document.getElementById('file-input'); const fileListDisplay = document.getElementById('file-list');
-        const sendBtn = document.getElementById('send-btn'); const cancelBtn = document.getElementById('cancel-btn');
-        const dropZone = document.getElementById('drop-zone'); const dropUI = document.getElementById('drop-ui');
-
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, (ev) => {ev.preventDefault(); ev.stopPropagation();}, false));
-        ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, () => dropUI.classList.add('dragover'), false));
-        ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, () => dropUI.classList.remove('dragover'), false));
-        dropZone.addEventListener('drop', (e) => { if(!(sendBtn.disabled && filesQueue.length > 0)) handleFiles(e.dataTransfer.files); });
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
-        function handleFiles(files) {
-            activeObjectUrls.forEach(url => URL.revokeObjectURL(url)); activeObjectUrls = [];
-            
-            const rawFiles = Array.from(files); filesQueue = [];
-            const MAX_SIZE = 2 * 1024 * 1024 * 1024; let rejectedCount = 0;
-            rawFiles.forEach(f => { if (f.size > MAX_SIZE) { rejectedCount++; } else { filesQueue.push(f); } });
-            if (rejectedCount > 0) alert(`⚠️ ${rejectedCount} file diabaikan (> 2 GB).`);
-
-            if (filesQueue.length > 0) {
-                fileListDisplay.style.display = 'block'; fileListDisplay.innerHTML = "";
-                filesQueue.forEach(f => {
-                    let thumbHtml = `<div class="file-thumb"><i class="fa-solid fa-file"></i></div>`;
-                    if (f.type.startsWith('image/')) {
-                        const imgUrl = URL.createObjectURL(f); activeObjectUrls.push(imgUrl);
-                        thumbHtml = `<img src="${imgUrl}" class="file-thumb">`;
-                    }
-                    const nameDiv = document.createElement('div'); nameDiv.className = 'file-name'; nameDiv.textContent = f.name;
-                    fileListDisplay.innerHTML += `<div class="file-item">${thumbHtml}<div class="file-info">${nameDiv.outerHTML}<div class="file-size">${formatBytes(f.size)}</div></div></div>`;
-                });
-                sendBtn.disabled = false; sendBtn.innerHTML = `<i class="fa-solid fa-file-export"></i> Kirim ${filesQueue.length} File`;
-            } else { fileListDisplay.style.display = 'none'; sendBtn.disabled = true; }
-        }
-
-        sendBtn.addEventListener('click', () => {
-            if (filesQueue.length === 0) return;
-            isCancelled = false; sendBtn.style.display = 'none'; cancelBtn.style.display = 'block'; fileInput.disabled = true;
-            currentFileIndex = 0; requestWakeLock(); processNextFileInQueue();
-        });
-        cancelBtn.addEventListener('click', () => {
-            isCancelled = true; conn.send({ type: 'cancel' }); addToLog(`Dibatalkan oleh Anda.`, false);
-            showToast("Dibatalkan."); resetUIAfterSend(); releaseWakeLock();
-        });
-
-        function processNextFileInQueue() {
-            if (isCancelled) return;
-            if (currentFileIndex >= filesQueue.length) { showToast("Selesai!"); resetUIAfterSend(); releaseWakeLock(); return; }
-            sendFile(filesQueue[currentFileIndex]);
-        }
-
-        function sendFile(file) {
-            if (file.size === 0) { addToLog(`File kosong dilewati`, false); currentFileIndex++; setTimeout(processNextFileInQueue, 100); return; }
-            document.getElementById('progress-container').style.display = 'block'; document.getElementById('stats-area').style.display = 'flex';
-            const CHUNK_SIZE = 1024 * 1024; let offset = 0;
-            conn.send({ type: 'meta', name: file.name, size: file.size, mime: file.type });
-            let startTime = performance.now(); let lastUpdate = startTime; let bytesSinceLastUpdate = 0;
-
-            function readAndSendNextChunk() {
-                if (isCancelled) return;
-                if (conn.dataChannel.bufferedAmount > 1048576) { setTimeout(readAndSendNextChunk, 10); return; }
-                const slice = file.slice(offset, offset + CHUNK_SIZE); const reader = new FileReader();
-                reader.onload = (e) => {
-                    if (isCancelled) return;
-                    const chunkData = e.target.result; conn.send({ type: 'chunk', data: chunkData });
-                    offset += chunkData.byteLength; bytesSinceLastUpdate += chunkData.byteLength;
-                    const now = performance.now(); const timeDiff = now - lastUpdate;
-                    if (timeDiff >= 250 || offset >= file.size) {
-                        const percent = Math.round((offset / file.size) * 100); const speedBps = (bytesSinceLastUpdate / (timeDiff / 1000));
-                        const etaSeconds = speedBps > 0 ? Math.ceil((file.size - offset) / speedBps) : 0;
-                        updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds));
-                        lastUpdate = now; bytesSinceLastUpdate = 0;
-                    }
-                    if (offset < file.size) { setTimeout(readAndSendNextChunk, 0); } 
-                    else { conn.send({ type: 'eof' }); addToLog(`Terkirim: ${file.name}`, true); currentFileIndex++; setTimeout(processNextFileInQueue, 500); }
-                };
-                reader.readAsArrayBuffer(slice);
-            }
-            readAndSendNextChunk();
-        }
-
-        function updateStats(percent, speed, eta) { document.getElementById('progress-bar').style.width = percent + '%'; document.getElementById('progress-text').innerText = `${percent}%`; document.getElementById('speed-text').innerText = speed; document.getElementById('eta-text').innerText = eta; }
-        function resetUIAfterSend() { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; document.getElementById('progress-bar').style.width = '0%'; fileInput.value = ""; fileInput.disabled = false; fileListDisplay.style.display = 'none'; filesQueue = []; sendBtn.style.display = 'block'; sendBtn.disabled = true; cancelBtn.style.display = 'none'; sendBtn.innerHTML = `<i class="fa-solid fa-file-export"></i> Kirim Semua`; }
-        function addToLog(message, isSuccess = true) { const emptyLog = document.getElementById('empty-log'); if(emptyLog) emptyLog.remove(); const li = document.createElement('li'); li.innerHTML = `${isSuccess ? '<i class="fa-solid fa-check" style="color:var(--success)"></i>' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i>'} <span style="flex-grow:1;">${message}</span>`; document.getElementById('transfer-log').prepend(li); }
-        function downloadFile(blob, filename) { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 1000); }
-        function copyInviteLink() { const inviteLink = window.location.origin + window.location.pathname + "?connect=" + myIdStr; navigator.clipboard.writeText(inviteLink).then(() => showToast("Link Disalin!")); }
-        function formatBytes(bytes) { if (bytes === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]; }
-        function formatTime(seconds) { if (seconds === Infinity || isNaN(seconds)) return "--:--"; if (seconds < 60) return `${seconds}s`; const m = Math.floor(seconds / 60); const s = seconds % 60; return `${m}m ${s}s`; }
-        function showToast(msg) { const toast = document.getElementById('toast'); toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
-		
-        // Perbaikan: Fungsi Pembuat Balon Chat Visual di dalam chat-box
-		function addChatMessage(sender, text, isMe){
-            const chatBox = document.getElementById('chat-box');
-            if (!chatBox) return;
-            const msgDiv = document.createElement('div');
-            msgDiv.style.background = isMe ? '#3b82f6':'#374151';
-            msgDiv.style.color = '#fff';
-            msgDiv.style.padding = '8px 12px';
-            msgDiv.style.borderRadius = '12px';
-            msgDiv.style.maxWidth = '80%';
-            msgDiv.style.alignSelf = isMe ? 'flex-end':'flex-start';
-            msgDiv.style.wordBreak = 'break-word';
-            msgDiv.style.textAlign = 'left';
-            msgDiv.innerHTML = `<strong style="font-size:0.8em;opacity:0.8;display:block;">${sender}</strong> ${text}`;
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        window.addEventListener('beforeunload', () =>{if (conn && conn.open){conn.send({type:'cancel'});conn.close();}if (peer && !peer.destroyed){peer.destroy();}});
-		
-        // Perbaikan: Logika Pengirim Teks diselaraskan dengan ID elemen baru
-        document.getElementById('btn-send-chat').addEventListener('click', () =>{
-            const chatInput = document.getElementById('chat-input');
-            const text = chatInput.value.trim();
-            if (!conn){
-                showToast("Belum terhubung dengan siapa pun!");
-                return;
-            }
-            if (text !== ""){
-                conn.send({type:'text', content:text});
-                addChatMessage('Anda', text, true);
-                chatInput.value = "";
-            }
-        });
-        
-        document.getElementById('chat-input').addEventListener('keypress', (e) =>{
-            if (e.key === 'Enter'){
-                document.getElementById('btn-send-chat').click();
-            }
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
