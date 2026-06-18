@@ -1,7 +1,9 @@
-const CACHE_NAME = 'Skynet-v9.3';
+const CACHE_NAME = 'Skynet-v9.5';
 const urlsToCache = [
   './',
   './index.html',
+  './app.js',
+  './style.css',
   './manifest.json',
   './favicon.ico',
   './icon-192.png',
