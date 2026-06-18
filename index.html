@@ -37,7 +37,6 @@
         .brand i { color: var(--primary); }
         .header-actions { display: flex; gap: 15px; align-items: center; }
         
-        /* Tombol Install PWA */
         #install-btn { display: none; background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
         
         .theme-btn { background: transparent; border: none; font-size: 1.2rem; color: var(--text-color); cursor: pointer; }
@@ -65,6 +64,9 @@
         .text-send-area { display: flex; gap: 8px; margin-bottom: 1rem; }
         .text-input { flex-grow: 1; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.9rem; outline: none; }
         .btn-send-text { background: var(--primary); color: white; border: none; border-radius: 10px; padding: 0 1rem; cursor: pointer; }
+
+        /* Gaya Khusus Kotak Obrolan Moderen */
+        .chat-container { height: 180px; overflow-y: auto; background: var(--bg-color); border-radius: 12px; padding: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; }
 
         .file-upload-wrapper { position: relative; margin-bottom: 1rem; }
         .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
@@ -135,9 +137,11 @@
         <div class="card" id="transfer-area">
             <div class="status-badge" id="status-badge"><i class="fa-solid fa-shield-check"></i> Terhubung Aman (P2P)</div>
             
+            <div class="chat-container" id="chat-box"></div>
+
             <div class="text-send-area">
-                <input type="text" id="text-input" class="text-input" placeholder="Ketik pesan atau salin tautan...">
-                <button class="btn-send-text" id="send-text-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                <input type="text" id="chat-input" class="text-input" placeholder="Ketik pesan atau salin tautan...">
+                <button class="btn-send-text" id="btn-send-chat"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
 
             <div class="file-upload-wrapper" id="drop-zone">
@@ -160,8 +164,8 @@
             </div>
 
             <div class="log-area">
-                <h4>Riwayat Sesi Ini:</h4>
-                <ul class="log-list" id="transfer-log"><li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada aktivitas.</li></ul>
+                <h4>Riwayat Berkas Sesi Ini:</h4>
+                <ul class="log-list" id="transfer-log"><li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada aktivitas berkas.</li></ul>
             </div>
         </div>
     </div>
@@ -278,31 +282,38 @@
             }
         }
 
-        const textInput = document.getElementById('text-input'); const sendTextBtn = document.getElementById('send-text-btn');
-        sendTextBtn.addEventListener('click', () => {
-            const text = textInput.value.trim();
-            if (!conn) {
-		        showToast("Belum ada koneksi!");
-		        return;
-		    }
-		    if (text) { 
-		        conn.send({ type: 'text', content: text }); 
-		        addTextLog(`Anda: ${text}`, true); 
-		        textInput.value = ""; 
-		    }
-		});
-        textInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendTextBtn.click(); });
-
-        function addTextLog(text, isSender) {
-            const emptyLog = document.getElementById('empty-log'); if(emptyLog) emptyLog.remove();
-            const li = document.createElement('li');
-            const span = document.createElement('span'); span.style.wordBreak = 'break-all';
-            span.textContent = text;
-            li.innerHTML = `<i class="fa-solid fa-message" style="color: ${isSender ? 'var(--text-color)' : 'var(--primary)'}"></i>`;
-            li.appendChild(span);
-            const btn = document.createElement('button'); btn.className = 'copy-btn'; btn.textContent = 'Salin';
-            btn.onclick = () => { navigator.clipboard.writeText(text).then(() => showToast("Teks Disalin!")); };
-            li.appendChild(btn); document.getElementById('transfer-log').prepend(li);
+        // Perbaikan: Logika Penerima Chat yang diperbarui menggunakan addChatMessage
+        function handleIncomingData(data) {
+            if (data.type === 'text') { 
+                // Mengarahkan tampilan ke gelembung obrolan visual chat-box
+                addChatMessage('Teman', data.content, false); 
+                showToast("Pesan diterima!"); 
+            }
+            else if (data.type === 'cancel') {
+                receiveBuffer = []; receivedSize = 0;
+                document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none';
+                addToLog(`Dibatalkan pengirim.`, false); showToast("Pengirim membatalkan."); releaseWakeLock();
+            }
+            else if (data.type === 'meta') {
+                incomingFileInfo = data; receiveBuffer = []; receivedSize = 0; requestWakeLock();
+                document.getElementById('progress-container').style.display = 'block'; document.getElementById('stats-area').style.display = 'flex';
+                rcvStartTime = performance.now(); rcvLastUpdate = rcvStartTime; rcvBytesSinceLastUpdate = 0;
+            } 
+            else if (data.type === 'chunk') {
+                receiveBuffer.push(data.data); receivedSize += data.data.byteLength; rcvBytesSinceLastUpdate += data.data.byteLength;
+                const now = performance.now(); const timeDiff = now - rcvLastUpdate;
+                if (timeDiff >= 250) {
+                    const percent = Math.round((receivedSize / incomingFileInfo.size) * 100); const speedBps = (rcvBytesSinceLastUpdate / (timeDiff / 1000));
+                    const etaSeconds = speedBps > 0 ? Math.ceil((incomingFileInfo.size - receivedSize) / speedBps) : 0;
+                    updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds)); rcvLastUpdate = now; rcvBytesSinceLastUpdate = 0;
+                }
+            } 
+            else if (data.type === 'eof') {
+                updateStats(100, "Menyimpan...", "0s"); const blob = new Blob(receiveBuffer, { type: incomingFileInfo.mime });
+                downloadFile(blob, incomingFileInfo.name); receiveBuffer = []; receivedSize = 0; 
+                addToLog(`Diterima: ${incomingFileInfo.name}`, true); releaseWakeLock();
+                setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
+            }
         }
 
         let filesQueue = []; let currentFileIndex = 0; let isCancelled = false; let activeObjectUrls = [];
@@ -378,43 +389,11 @@
                         lastUpdate = now; bytesSinceLastUpdate = 0;
                     }
                     if (offset < file.size) { setTimeout(readAndSendNextChunk, 0); } 
-                    else { conn.send({ type: 'eof' }); addToLog(`Terkirim`, true); currentFileIndex++; setTimeout(processNextFileInQueue, 500); }
+                    else { conn.send({ type: 'eof' }); addToLog(`Terkirim: ${file.name}`, true); currentFileIndex++; setTimeout(processNextFileInQueue, 500); }
                 };
                 reader.readAsArrayBuffer(slice);
             }
             readAndSendNextChunk();
-        }
-
-        let receiveBuffer = []; let receivedSize = 0; let incomingFileInfo = null;
-        let rcvStartTime = 0; let rcvLastUpdate = 0; let rcvBytesSinceLastUpdate = 0;
-
-        function handleIncomingData(data) {
-            if (data.type === 'text') { playSuccessSound(); addTextLog(`Teman: ${data.content}`, false); showToast("Pesan diterima!"); }
-            else if (data.type === 'cancel') {
-                receiveBuffer = []; receivedSize = 0;
-                document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none';
-                addToLog(`Dibatalkan pengirim.`, false); showToast("Pengirim membatalkan."); releaseWakeLock();
-            }
-            else if (data.type === 'meta') {
-                incomingFileInfo = data; receiveBuffer = []; receivedSize = 0; requestWakeLock();
-                document.getElementById('progress-container').style.display = 'block'; document.getElementById('stats-area').style.display = 'flex';
-                rcvStartTime = performance.now(); rcvLastUpdate = rcvStartTime; rcvBytesSinceLastUpdate = 0;
-            } 
-            else if (data.type === 'chunk') {
-                receiveBuffer.push(data.data); receivedSize += data.data.byteLength; rcvBytesSinceLastUpdate += data.data.byteLength;
-                const now = performance.now(); const timeDiff = now - rcvLastUpdate;
-                if (timeDiff >= 250) {
-                    const percent = Math.round((receivedSize / incomingFileInfo.size) * 100); const speedBps = (rcvBytesSinceLastUpdate / (timeDiff / 1000));
-                    const etaSeconds = speedBps > 0 ? Math.ceil((incomingFileInfo.size - receivedSize) / speedBps) : 0;
-                    updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds)); rcvLastUpdate = now; rcvBytesSinceLastUpdate = 0;
-                }
-            } 
-            else if (data.type === 'eof') {
-                updateStats(100, "Menyimpan...", "0s"); const blob = new Blob(receiveBuffer, { type: incomingFileInfo.mime });
-                downloadFile(blob, incomingFileInfo.name); receiveBuffer = []; receivedSize = 0; 
-                addToLog(`Diterima`, true); playSuccessSound(); releaseWakeLock();
-                setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
-            }
         }
 
         function updateStats(percent, speed, eta) { document.getElementById('progress-bar').style.width = percent + '%'; document.getElementById('progress-text').innerText = `${percent}%`; document.getElementById('speed-text').innerText = speed; document.getElementById('eta-text').innerText = eta; }
@@ -426,13 +405,44 @@
         function formatTime(seconds) { if (seconds === Infinity || isNaN(seconds)) return "--:--"; if (seconds < 60) return `${seconds}s`; const m = Math.floor(seconds / 60); const s = seconds % 60; return `${m}m ${s}s`; }
         function showToast(msg) { const toast = document.getElementById('toast'); toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
 		
-        window.addEventListener('beforeunload', () => {
-            if (conn && conn.open) {
-                conn.send({ type: 'cancel' });
-                conn.close();
+        // Perbaikan: Fungsi Pembuat Balon Chat Visual di dalam chat-box
+		function addChatMessage(sender, text, isMe){
+            const chatBox = document.getElementById('chat-box');
+            if (!chatBox) return;
+            const msgDiv = document.createElement('div');
+            msgDiv.style.background = isMe ? '#3b82f6':'#374151';
+            msgDiv.style.color = '#fff';
+            msgDiv.style.padding = '8px 12px';
+            msgDiv.style.borderRadius = '12px';
+            msgDiv.style.maxWidth = '80%';
+            msgDiv.style.alignSelf = isMe ? 'flex-end':'flex-start';
+            msgDiv.style.wordBreak = 'break-word';
+            msgDiv.style.textAlign = 'left';
+            msgDiv.innerHTML = `<strong style="font-size:0.8em;opacity:0.8;display:block;">${sender}</strong> ${text}`;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        window.addEventListener('beforeunload', () =>{if (conn && conn.open){conn.send({type:'cancel'});conn.close();}if (peer && !peer.destroyed){peer.destroy();}});
+		
+        // Perbaikan: Logika Pengirim Teks diselaraskan dengan ID elemen baru
+        document.getElementById('btn-send-chat').addEventListener('click', () =>{
+            const chatInput = document.getElementById('chat-input');
+            const text = chatInput.value.trim();
+            if (!conn){
+                showToast("Belum terhubung dengan siapa pun!");
+                return;
             }
-            if (peer && !peer.destroyed) {
-                peer.destroy();
+            if (text !== ""){
+                conn.send({type:'text', content:text});
+                addChatMessage('Anda', text, true);
+                chatInput.value = "";
+            }
+        });
+        
+        document.getElementById('chat-input').addEventListener('keypress', (e) =>{
+            if (e.key === 'Enter'){
+                document.getElementById('btn-send-chat').click();
             }
         });
     </script>
