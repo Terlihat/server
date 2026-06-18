@@ -2,252 +2,401 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Local Server</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>P2P File Transfer</title>
     
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
     <style>
-        /* --- CSS Variables untuk Tema Light/Dark --- */
+        /* --- CSS Variables untuk Tema --- */
         :root {
             --bg-color: #f3f4f6;
             --text-color: #1f2937;
             --card-bg: #ffffff;
             --border-color: #e5e7eb;
-            --hover-bg: #f9fafb;
-            --primary-color: #3b82f6;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
         [data-theme="dark"] {
-            --bg-color: #111827;
-            --text-color: #f9fafb;
-            --card-bg: #1f2937;
-            --border-color: #374151;
-            --hover-bg: #374151;
-            --primary-color: #60a5fa;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --primary: #60a5fa;
+            --primary-dark: #3b82f6;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
         }
 
-        /* --- Reset & Layout Dasar --- */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s ease, color 0.3s ease;
-            padding: 2rem 1rem;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* --- Header & Tombol Tema --- */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-
-        .brand i {
-            color: var(--primary-color);
-            font-size: 1.8rem;
-        }
-
-        #theme-toggle {
-            background: var(--card-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-            box-shadow: var(--shadow);
-        }
-
-        #theme-toggle:hover {
-            background: var(--hover-bg);
-            transform: translateY(-2px);
-        }
-
-        /* --- Tampilan List File --- */
-        .file-manager {
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-        }
-
-        .file-item {
-            display: flex;
-            align-items: center;
-            padding: 1.2rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            text-decoration: none;
-            color: var(--text-color);
-            transition: background-color 0.2s;
-        }
-
-        .file-item:last-child {
-            border-bottom: none;
-        }
-
-        .file-item:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .file-icon {
-            font-size: 1.5rem;
-            width: 40px;
-            text-align: center;
-            margin-right: 15px;
-        }
-
-        .file-info {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .file-name {
-            font-weight: 500;
-            font-size: 1.05rem;
-        }
-
-        .file-meta {
-            font-size: 0.85rem;
-            opacity: 0.7;
-            display: flex;
-            gap: 15px;
-        }
-
-        /* Warna Ikon Spesifik */
-        .icon-folder { color: #fbbf24; }
-        .icon-image { color: #10b981; }
-        .icon-video { color: #ef4444; }
-        .icon-archive { color: #8b5cf6; }
-        .icon-code { color: var(--primary-color); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        @media (max-width: 600px) {
-            .file-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .file-icon { margin-right: 0; }
+        body {
+            background-color: var(--bg-color); color: var(--text-color);
+            transition: 0.3s ease; display: flex; flex-direction: column; min-height: 100vh;
         }
+
+        /* --- Header (Mobile Style) --- */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5rem; background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: sticky; top: 0; z-index: 10;
+        }
+        .brand { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .brand i { color: var(--primary); }
+        .theme-btn {
+            background: transparent; border: none; font-size: 1.2rem; color: var(--text-color); cursor: pointer;
+        }
+
+        /* --- Container Utama --- */
+        .container { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; gap: 1.5rem; max-width: 600px; margin: 0 auto; width: 100%; }
+
+        /* --- Cards --- */
+        .card {
+            background: var(--card-bg); border-radius: 16px; padding: 1.5rem;
+            box-shadow: var(--shadow); border: 1px solid var(--border-color); text-align: center;
+        }
+        .card h3 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-color); font-weight: 600; }
+
+        /* --- Tampilan ID --- */
+        .id-display {
+            background: var(--bg-color); padding: 1rem; border-radius: 12px;
+            font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; color: var(--primary);
+            margin-bottom: 1rem; word-break: break-all;
+        }
+
+        /* --- Input & Buttons (Touch-Friendly) --- */
+        input[type="text"] {
+            width: 100%; padding: 1rem; border-radius: 12px; border: 2px solid var(--border-color);
+            background: var(--bg-color); color: var(--text-color); font-size: 1.1rem;
+            text-align: center; outline: none; margin-bottom: 1rem; transition: 0.2s;
+        }
+        input[type="text"]:focus { border-color: var(--primary); }
+
+        .btn {
+            width: 100%; padding: 1rem; border-radius: 12px; border: none;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3); }
+        .btn-primary:active { background: var(--primary-dark); transform: scale(0.98); }
+        
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-outline:active { background: rgba(59, 130, 246, 0.1); }
+
+        /* --- Transfer Area (Hidden Default) --- */
+        #transfer-area { display: none; }
+        .status-badge {
+            display: inline-block; padding: 0.4rem 1rem; border-radius: 20px;
+            font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem;
+            background: rgba(16, 185, 129, 0.1); color: var(--success);
+        }
+
+        /* --- Custom File Input --- */
+        .file-upload-wrapper { position: relative; margin-bottom: 1.5rem; }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+        }
+        .file-upload-ui {
+            border: 2px dashed var(--primary); padding: 2rem 1rem; border-radius: 12px;
+            background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500;
+        }
+        .file-upload-ui i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+
+        #selected-file-name { display: block; margin-top: 10px; font-size: 0.9rem; color: var(--text-color); word-break: break-all; }
+
+        /* --- Progress Bar --- */
+        .progress-container { width: 100%; background: var(--border-color); border-radius: 10px; height: 12px; overflow: hidden; margin-top: 1rem; display: none; }
+        .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
+        .progress-text { font-size: 0.9rem; margin-top: 8px; font-weight: 500; display: none; }
+
+        /* --- Toast Notification --- */
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--text-color); color: var(--bg-color); padding: 12px 24px; border-radius: 30px;
+            font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000;
+            transition: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); opacity: 0;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
     </style>
 </head>
 <body>
 
+    <header>
+        <div class="brand"><i class="fa-solid fa-paper-plane"></i> WebDrop</div>
+        <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+    </header>
+
     <div class="container">
-        <header>
-            <div class="brand">
-                <i class="fa-solid fa-server"></i>
-                <span>My Web Server</span>
+        <div id="connection-area">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <h3>ID Perangkat Anda</h3>
+                <div class="id-display" id="my-id">Memuat...</div>
+                <button class="btn btn-outline" onclick="copyMyId()"><i class="fa-regular fa-copy"></i> Salin ID</button>
             </div>
-            <button id="theme-toggle">
-                <i class="fa-solid fa-moon"></i> Dark Mode
-            </button>
-        </header>
 
-        <div class="file-manager">
+            <div class="card">
+                <h3>Hubungkan ke Teman</h3>
+                <input type="text" id="peer-id-input" placeholder="Masukkan ID Teman">
+                <button class="btn btn-primary" id="connect-btn"><i class="fa-solid fa-link"></i> Hubungkan</button>
+            </div>
+        </div>
+
+        <div class="card" id="transfer-area">
+            <div class="status-badge"><i class="fa-solid fa-check-circle"></i> Terhubung!</div>
             
-            <a href="#" class="file-item">
-                <div class="file-icon icon-folder"><i class="fa-solid fa-folder"></i></div>
-                <div class="file-info">
-                    <span class="file-name">Movies & Series</span>
-                    <span class="file-meta">Folder • Terakhir diubah: Hari ini</span>
+            <div class="file-upload-wrapper">
+                <div class="file-upload-ui">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Ketuk untuk pilih file besar</span>
                 </div>
-            </a>
+                <input type="file" id="file-input">
+            </div>
+            
+            <span id="selected-file-name">Belum ada file dipilih</span>
 
-            <a href="#" class="file-item">
-                <div class="file-icon icon-image"><i class="fa-solid fa-image"></i></div>
-                <div class="file-info">
-                    <span class="file-name">Wallpaper_4K.png</span>
-                    <span class="file-meta">4.2 MB • Gambar</span>
-                </div>
-            </a>
+            <button class="btn btn-primary" id="send-btn" style="margin-top: 1.5rem;" disabled>
+                <i class="fa-solid fa-share-nodes"></i> Kirim File
+            </button>
 
-            <a href="#" class="file-item">
-                <div class="file-icon icon-video"><i class="fa-solid fa-circle-play"></i></div>
-                <div class="file-info">
-                    <span class="file-name">Tutorial_Coding.mp4</span>
-                    <span class="file-meta">156 MB • Video</span>
-                </div>
-            </a>
-
-            <a href="#" class="file-item">
-                <div class="file-icon icon-archive"><i class="fa-solid fa-file-zipper"></i></div>
-                <div class="file-info">
-                    <span class="file-name">Project_Backup.zip</span>
-                    <span class="file-meta">25 MB • ZIP Archive</span>
-                </div>
-            </a>
-
-             <a href="#" class="file-item">
-                <div class="file-icon icon-code"><i class="fa-solid fa-file-code"></i></div>
-                <div class="file-info">
-                    <span class="file-name">index.html</span>
-                    <span class="file-meta">8 KB • HTML Document</span>
-                </div>
-            </a>
-
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0%</div>
         </div>
     </div>
 
-    <script>
-        const toggleBtn = document.getElementById('theme-toggle');
-        const rootElement = document.documentElement;
-        
-        // Cek preferensi tema yang tersimpan di LocalStorage
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            rootElement.setAttribute('data-theme', savedTheme);
-            updateButtonUI(savedTheme);
-        }
+    <div id="toast">Notifikasi</div>
 
-        // Event Listener untuk tombol ganti tema
-        toggleBtn.addEventListener('click', () => {
-            const currentTheme = rootElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            rootElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme); // Simpan pilihan user
-            updateButtonUI(newTheme);
+    <script>
+        // --- Dark/Light Mode ---
+        const themeBtn = document.getElementById('theme-toggle');
+        const root = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || 'dark'; // Default Dark untuk mobile
+        root.setAttribute('data-theme', savedTheme);
+        themeBtn.innerHTML = savedTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+
+        themeBtn.addEventListener('click', () => {
+            const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            root.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
         });
 
-        // Fungsi untuk mengubah teks dan ikon pada tombol
-        function updateButtonUI(theme) {
-            if (theme === 'dark') {
-                toggleBtn.innerHTML = '<i class="fa-solid fa-sun"></i> Light Mode';
-            } else {
-                toggleBtn.innerHTML = '<i class="fa-solid fa-moon"></i> Dark Mode';
+        // --- Variabel WebRTC ---
+        let peer = null;
+        let conn = null; // Koneksi aktif
+        let myIdStr = "";
+
+        // UI Elements
+        const connectionArea = document.getElementById('connection-area');
+        const transferArea = document.getElementById('transfer-area');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const fileInput = document.getElementById('file-input');
+        const sendBtn = document.getElementById('send-btn');
+        const fileNameDisplay = document.getElementById('selected-file-name');
+
+        // --- Inisialisasi PeerJS ---
+        // Menghasilkan ID acak 4 digit angka agar mudah diketik di HP
+        const randomId = Math.floor(1000 + Math.random() * 9000).toString();
+        
+        peer = new Peer(randomId, {
+            debug: 2
+        });
+
+        peer.on('open', (id) => {
+            myIdStr = id;
+            document.getElementById('my-id').innerText = id;
+        });
+
+        // Menerima Koneksi Masuk
+        peer.on('connection', (connection) => {
+            conn = connection;
+            setupConnection();
+        });
+
+        // Memulai Koneksi ke ID Lain
+        document.getElementById('connect-btn').addEventListener('click', () => {
+            const targetId = document.getElementById('peer-id-input').value.trim();
+            if(!targetId) return showToast("Masukkan ID dulu!");
+            
+            showToast("Menghubungkan...");
+            conn = peer.connect(targetId);
+            
+            conn.on('open', () => {
+                setupConnection();
+            });
+            
+            conn.on('error', (err) => {
+                showToast("Koneksi gagal!");
+            });
+        });
+
+        function setupConnection() {
+            showToast("Berhasil Terhubung!");
+            connectionArea.style.display = 'none';
+            transferArea.style.display = 'block';
+
+            // Menangani penerimaan data (Metode Chunking)
+            conn.on('data', handleIncomingData);
+        }
+
+        // --- Logika Input File ---
+        let selectedFile = null;
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedFile = e.target.files[0];
+                fileNameDisplay.innerText = selectedFile.name + " (" + formatBytes(selectedFile.size) + ")";
+                sendBtn.disabled = false;
             }
+        });
+
+        // --- Logika Pengiriman File (Chunking 256KB agar RAM aman) ---
+        sendBtn.addEventListener('click', () => {
+            if (!selectedFile) return;
+            
+            sendBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            progressText.style.display = 'block';
+            
+            const CHUNK_SIZE = 256 * 1024; // 256 KB per potong
+            let offset = 0;
+
+            // 1. Kirim Metadata (Nama dan Ukuran File)
+            conn.send({
+                type: 'meta',
+                name: selectedFile.name,
+                size: selectedFile.size,
+                mime: selectedFile.type
+            });
+
+            // 2. Fungsi untuk membaca dan mengirim potongan
+            function readAndSendNextChunk() {
+                const slice = selectedFile.slice(offset, offset + CHUNK_SIZE);
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    const arrayBuffer = e.target.result;
+                    conn.send({
+                        type: 'chunk',
+                        data: arrayBuffer
+                    });
+
+                    offset += arrayBuffer.byteLength;
+                    
+                    // Update UI Progress
+                    const percent = Math.round((offset / selectedFile.size) * 100);
+                    updateProgress(percent, "Mengirim...");
+
+                    if (offset < selectedFile.size) {
+                        // Delay super kecil agar WebRTC punya nafas mengosongkan buffer
+                        setTimeout(readAndSendNextChunk, 5); 
+                    } else {
+                        // 3. Kirim penanda selesai (EOF)
+                        conn.send({ type: 'eof' });
+                        updateProgress(100, "Selesai dikirim!");
+                        setTimeout(() => resetUI(), 3000);
+                    }
+                };
+                reader.readAsArrayBuffer(slice);
+            }
+
+            // Mulai mengirim potongan pertama
+            readAndSendNextChunk();
+        });
+
+        // --- Logika Penerimaan File ---
+        let receiveBuffer = [];
+        let receivedSize = 0;
+        let incomingFileInfo = null;
+
+        function handleIncomingData(data) {
+            // Menerima Metadata
+            if (data.type === 'meta') {
+                incomingFileInfo = data;
+                receiveBuffer = [];
+                receivedSize = 0;
+                progressContainer.style.display = 'block';
+                progressText.style.display = 'block';
+                showToast("Menerima file...");
+            } 
+            // Menerima Potongan File
+            else if (data.type === 'chunk') {
+                receiveBuffer.push(data.data);
+                receivedSize += data.data.byteLength;
+                
+                const percent = Math.round((receivedSize / incomingFileInfo.size) * 100);
+                updateProgress(percent, "Menerima...");
+            } 
+            // File Selesai Diterima
+            else if (data.type === 'eof') {
+                updateProgress(100, "Selesai! Menyimpan...");
+                
+                // Gabungkan semua potongan menjadi satu file utuh (Blob)
+                const blob = new Blob(receiveBuffer, { type: incomingFileInfo.mime });
+                
+                // Paksa browser untuk mendownload file tersebut
+                downloadFile(blob, incomingFileInfo.name);
+                
+                showToast("File berhasil disimpan!");
+                setTimeout(() => resetUI(), 3000);
+            }
+        }
+
+        // --- Fungsi Utilitas ---
+        function updateProgress(percent, text) {
+            progressBar.style.width = percent + '%';
+            progressText.innerText = `${text} ${percent}%`;
+        }
+
+        function resetUI() {
+            progressContainer.style.display = 'none';
+            progressText.style.display = 'none';
+            progressBar.style.width = '0%';
+            fileInput.value = "";
+            selectedFile = null;
+            fileNameDisplay.innerText = "Belum ada file dipilih";
+            sendBtn.disabled = true;
+        }
+
+        function downloadFile(blob, filename) {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024, dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function copyMyId() {
+            navigator.clipboard.writeText(myIdStr);
+            showToast("ID Disalin!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
     </script>
 </body>
