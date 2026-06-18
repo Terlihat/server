@@ -119,6 +119,14 @@
                 </div>
                 <div id="qr-box"><div id="qrcode"></div></div>
             </div>
+
+			<div class="card" style="margin-top: 1.2rem;">
+                <h3>Hubungkan Manual</h3>
+                <div class="text-send-area" style="margin-bottom: 0;">
+                    <input type="text" id="peer-id-input" class="text-input" placeholder="Masukkan 4 digit ID teman..." inputmode="numeric" pattern="[0-9]*" maxlength="4">
+                    <button class="btn-send-text" onclick="connectManually()" style="background: var(--primary);"><i class="fa-solid fa-plug"></i></button>
+                </div>
+            </div>
             <div class="card" style="margin-top: 1.2rem; opacity: 0.8;" id="status-wait">
                 <p style="font-size: 0.9rem;"><i class="fa-solid fa-spinner fa-spin"></i> Menunggu koneksi masuk...</p>
             </div>
@@ -224,6 +232,23 @@
         function connectToPeer(targetId) {
             conn = peer.connect(targetId);
             conn.on('open', () => setupConnection()); conn.on('error', () => showToast("Gagal terhubung!"));
+        }
+
+		function connectManually() {
+            const inputField = document.getElementById('peer-id-input');
+            const targetId = inputField.value.trim();
+            
+            if (!targetId) {
+                showToast("Masukkan ID terlebih dahulu!");
+                return;
+            }
+            if (targetId === myIdStr) {
+                showToast("Tidak bisa konek ke ID sendiri!");
+                return;
+            }
+            
+            showToast("Menghubungkan ke " + targetId + "...");
+            connectToPeer(targetId);
         }
 
         function setupConnection() {
