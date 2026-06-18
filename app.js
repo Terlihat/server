@@ -181,6 +181,9 @@ function handleIncomingData(data) {
     else if (data.type === 'game_action') {
         handlePeerAction(data.actionData);
     }
+	else if (data.type === 'game_powerup') {
+        handlePeerPowerUp(data.actionData);
+    }
 }
 
 // --- 7. OUTGOING FILE TRANSMISSION ---
@@ -312,28 +315,31 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter'){ document.getElementById('btn-send-chat').click(); }
 });
 
-// --- 10. LOGIKA GAME ONET ---
+// --- 10. LOGIKA GAME ONET (TAHAP 2: CHAOS UPDATE) ---
 let onetBoardData = [];
 let selectedIndex = null;
-let currentScore = 0;
+let myScore = 0;
+let peerScore = 0;
+let myPowerUps = { shuffle: 1, hint: 1, freeze: 1 };
+let isFrozen = false;
 
-const icons = ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽']; 
+const COLS = 6; const ROWS = 6;
+const icons = ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽','🥥','🍍','🍋','🍒','🥝','🍅','🍆','🥔','🍔','🍕']; 
 
 function startNewGame() {
     if (!conn) { showToast("Belum terhubung dengan teman!"); return; }
     
     let deck = [...icons, ...icons];
-    
     for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
     }
 
-    const newBoard = deck.map((icon, index) => ({
-        id: index,
-        icon: icon,
-        isCleared: false
-    }));
+    const newBoard = deck.map((icon, index) => ({ id: index, icon: icon, isCleared: false }));
+    
+    // Reset Power-Ups setiap mulai baru
+    myPowerUps = { shuffle: 1, hint: 1, freeze: 1 };
+    updatePowerUpUI();
 
     renderBoard(newBoard);
     conn.send({ type: 'game_init', boardData: newBoard });
@@ -342,12 +348,13 @@ function startNewGame() {
 function renderBoard(boardData) {
     onetBoardData = boardData;
     selectedIndex = null;
-    currentScore = 0;
-    document.getElementById('game-score').innerText = `Skor: ${currentScore}`;
+    myScore = 0; peerScore = 0;
+    updateScoreUI();
     
     const boardEl = document.getElementById('onet-board');
     if(boardEl) {
         boardEl.innerHTML = '';
+        boardEl.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
         boardData.forEach((tile, index) => {
             const tileEl = document.createElement('div');
             tileEl.className = `onet-tile ${tile.isCleared ? 'hidden' : ''}`;
@@ -359,17 +366,29 @@ function renderBoard(boardData) {
     }
 }
 
+function updateScoreUI() {
+    const scoreEl = document.getElementById('game-score');
+    if(scoreEl) scoreEl.innerHTML = `<div class="score-container"><span class="score-me">Anda: ${myScore}</span> <span style="color:var(--text-color); opacity:0.5;">|</span> <span class="score-peer">Teman: ${peerScore}</span></div>`;
+}
+
+function updatePowerUpUI() {
+    document.getElementById('btn-shuffle').innerHTML = `<i class="fa-solid fa-shuffle"></i> Acak (${myPowerUps.shuffle})`;
+    document.getElementById('btn-hint').innerHTML = `<i class="fa-solid fa-lightbulb"></i> Petunjuk (${myPowerUps.hint})`;
+    document.getElementById('btn-freeze').innerHTML = `<i class="fa-solid fa-snowflake"></i> Bekukan (${myPowerUps.freeze})`;
+}
+
 function onTileClick(index) {
+    if (isFrozen) { showToast("Tubuh Anda membeku! Tidak bisa bergerak!"); return; }
     if (onetBoardData[index].isCleared) return;
     conn.send({ type: 'game_action', actionData: { index: index } });
-    processGameLogic(index);
+    processGameLogic(index, false); 
 }
 
 function handlePeerAction(actionData) {
-    processGameLogic(actionData.index);
+    processGameLogic(actionData.index, true); 
 }
 
-function processGameLogic(index) {
+function processGameLogic(index, isFromPeer) {
     const tilesEl = document.querySelectorAll('.onet-tile');
     
     if (selectedIndex === null) {
@@ -384,21 +403,165 @@ function processGameLogic(index) {
         return;
     }
 
-    const tile1 = onetBoardData[selectedIndex];
-    const tile2 = onetBoardData[index];
+    const idx1 = selectedIndex; const idx2 = index;
+    const tile1 = onetBoardData[idx1]; const tile2 = onetBoardData[idx2];
+    tilesEl[idx1].classList.remove('selected');
+    selectedIndex = null; 
 
-    tilesEl[selectedIndex].classList.remove('selected');
+    if (tile1.icon === tile2.icon && checkOnetPath(idx1, idx2)) {
+        tile1.isCleared = true; tile2.isCleared = true;
+        const matchClass = isFromPeer ? 'tile-match-peer' : 'tile-match-me';
+        tilesEl[idx1].classList.add(matchClass); tilesEl[idx2].classList.add(matchClass);
+        if ('vibrate' in navigator) navigator.vibrate(100);
 
-    if (tile1.icon === tile2.icon) {
-        tile1.isCleared = true;
-        tile2.isCleared = true;
+        setTimeout(() => {
+            tilesEl[idx1].classList.add('hidden');
+            tilesEl[idx2].classList.add('hidden');
+            applyGravity(); // Panggil gravitasi setelah balok hancur
+        }, 300);
         
-        tilesEl[selectedIndex].classList.add('hidden');
-        tilesEl[index].classList.add('hidden');
-        
-        currentScore += 10;
-        document.getElementById('game-score').innerText = `Skor: ${currentScore}`;
+        if (isFromPeer) peerScore += 10; else myScore += 10;
+        updateScoreUI();
+    } else {
+        if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]);
+        tilesEl[idx1].classList.add('error'); tilesEl[idx2].classList.add('error');
+        setTimeout(() => { tilesEl[idx1].classList.remove('error'); tilesEl[idx2].classList.remove('error'); }, 300);
     }
+}
 
-    selectedIndex = null;
+// --- SISTEM GRAVITASI ---
+function applyGravity() {
+    let changed = false;
+    for (let x = 0; x < COLS; x++) {
+        let emptySpots = 0;
+        for (let y = ROWS - 1; y >= 0; y--) {
+            let idx = y * COLS + x;
+            if (onetBoardData[idx].isCleared) {
+                emptySpots++;
+            } else if (emptySpots > 0) {
+                let targetIdx = (y + emptySpots) * COLS + x;
+                onetBoardData[targetIdx] = onetBoardData[idx];
+                onetBoardData[idx] = { id: -1, icon: '', isCleared: true };
+                changed = true;
+            }
+        }
+    }
+    if (changed) {
+        setTimeout(() => {
+            renderBoard(onetBoardData); // Gambar ulang papan dengan posisi baru
+        }, 100); 
+    }
+}
+
+// --- SISTEM POWER-UPS ---
+function usePowerUp(type) {
+    if (myPowerUps[type] <= 0 || isFrozen) return;
+    myPowerUps[type]--;
+    updatePowerUpUI();
+
+    if (type === 'shuffle') {
+        doShuffle();
+        conn.send({ type: 'game_powerup', actionData: { action: 'shuffle', board: onetBoardData } });
+    } else if (type === 'hint') {
+        doHint(); 
+    } else if (type === 'freeze') {
+        conn.send({ type: 'game_powerup', actionData: { action: 'freeze' } });
+        showToast("Mantra pembeku dikirim ke teman!");
+    }
+}
+
+function doShuffle() {
+    let remainingIcons = [];
+    onetBoardData.forEach(t => { if (!t.isCleared) remainingIcons.push(t.icon); });
+    remainingIcons.sort(() => Math.random() - 0.5);
+    
+    let iconIdx = 0;
+    onetBoardData.forEach(t => { if (!t.isCleared) t.icon = remainingIcons[iconIdx++]; });
+    renderBoard(onetBoardData);
+    showToast("Papan diacak!");
+}
+
+function doHint() {
+    for(let i=0; i<onetBoardData.length; i++) {
+        if(onetBoardData[i].isCleared) continue;
+        for(let j=i+1; j<onetBoardData.length; j++) {
+            if(!onetBoardData[j].isCleared && onetBoardData[i].icon === onetBoardData[j].icon) {
+                if(checkOnetPath(i, j)) {
+                    const t1 = document.getElementById(`tile-${i}`);
+                    const t2 = document.getElementById(`tile-${j}`);
+                    if(t1) t1.classList.add('hint-glow');
+                    if(t2) t2.classList.add('hint-glow');
+                    setTimeout(() => {
+                        if(t1) t1.classList.remove('hint-glow');
+                        if(t2) t2.classList.remove('hint-glow');
+                    }, 2000);
+                    return;
+                }
+            }
+        }
+    }
+    showToast("Oops, sepertinya tidak ada jalan yang terbuka!");
+}
+
+function handlePeerPowerUp(actionData) {
+    if (actionData.action === 'shuffle') {
+        onetBoardData = actionData.board;
+        renderBoard(onetBoardData);
+        showToast("Papan diacak oleh teman!");
+    } else if (actionData.action === 'freeze') {
+        isFrozen = true;
+        showToast("LAYAR ANDA DIBEKUKAN TEMAN!");
+        document.getElementById('onet-board').classList.add('frozen-board');
+        if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+        
+        setTimeout(() => {
+            isFrozen = false;
+            document.getElementById('onet-board').classList.remove('frozen-board');
+            showToast("Bebas dari kebekuan! Balas dendam!");
+        }, 3000); // Beku selama 3 detik
+    }
+}
+
+// --- ALGORITMA PATHFINDING 3 GARIS ---
+function getGrid() {
+    let grid = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(0));
+    for(let i=0; i<onetBoardData.length; i++) {
+        if(!onetBoardData[i].isCleared) grid[Math.floor(i / COLS) + 1][(i % COLS) + 1] = 1;
+    }
+    return grid;
+}
+
+function checkLine(x1, y1, x2, y2, grid) {
+    if (x1 === x2) {
+        for (let y = Math.min(y1, y2) + 1; y < Math.max(y1, y2); y++) if (grid[y][x1] !== 0) return false;
+        return true;
+    }
+    if (y1 === y2) {
+        for (let x = Math.min(x1, x2) + 1; x < Math.max(x1, x2); x++) if (grid[y1][x] !== 0) return false;
+        return true;
+    }
+    return false;
+}
+
+function checkOnetPath(idx1, idx2) {
+    let x1 = (idx1 % COLS) + 1, y1 = Math.floor(idx1 / COLS) + 1;
+    let x2 = (idx2 % COLS) + 1, y2 = Math.floor(idx2 / COLS) + 1;
+    let grid = getGrid();
+    grid[y1][x1] = 0; grid[y2][x2] = 0;
+
+    if (x1 === x2 || y1 === y2) if (checkLine(x1, y1, x2, y2, grid)) return true; 
+    if (grid[y1][x2] === 0 && checkLine(x1, y1, x2, y1, grid) && checkLine(x2, y1, x2, y2, grid)) return true;
+    if (grid[y2][x1] === 0 && checkLine(x1, y1, x1, y2, grid) && checkLine(x1, y2, x2, y2, grid)) return true;
+
+    for (let x = 0; x < COLS + 2; x++) {
+        if (grid[y1][x] === 0 && checkLine(x1, y1, x, y1, grid)) {
+            if (grid[y2][x] === 0 && checkLine(x, y1, x, y2, grid) && checkLine(x, y2, x2, y2, grid)) return true;
+        }
+    }
+    for (let y = 0; y < ROWS + 2; y++) {
+        if (grid[y][x1] === 0 && checkLine(x1, y1, x1, y, grid)) {
+            if (grid[y][x2] === 0 && checkLine(x1, y, x2, y, grid) && checkLine(x2, y, x2, y2, grid)) return true;
+        }
+    }
+    return false;
 }

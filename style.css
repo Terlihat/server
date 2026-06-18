@@ -89,3 +89,61 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .onet-tile:active { transform: scale(0.9); }
 .onet-tile.selected { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.1); transform: scale(1.05); }
 .onet-tile.hidden { visibility: hidden; }
+
+/* --- EFEK VISUAL ONET 2.0 --- */
+.score-container { display: flex; gap: 15px; font-weight: 700; font-size: 1.1rem; }
+.score-me { color: var(--primary); }
+.score-peer { color: var(--danger); }
+
+/* Balok sedikit diperkecil untuk menyesuaikan papan 6x6 */
+.onet-tile { height: 50px; font-size: 1.6rem; transition: all 0.3s ease; }
+
+/* Efek saat Anda yang mencetak poin (Biru) */
+.tile-match-me {
+    border-color: var(--primary) !important;
+    background: rgba(59, 130, 246, 0.3) !important;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+    transform: scale(1.15) !important;
+    z-index: 10;
+}
+
+/* Efek saat Teman yang mencetak poin (Merah) */
+.tile-match-peer {
+    border-color: var(--danger) !important;
+    background: rgba(239, 68, 68, 0.3) !important;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+    transform: scale(1.15) !important;
+    z-index: 10;
+}
+
+/* Efek jika garis terhalang atau balok tidak sama (Goyang) */
+.onet-tile.error {
+    border-color: var(--danger) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    animation: shake 0.3s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px) rotate(-5deg); }
+    75% { transform: translateX(5px) rotate(5deg); }
+}
+
+/* --- EFEK POWER-UP & GRAVITASI (TAHAP 2) --- */
+.frozen-board {
+    pointer-events: none;
+    filter: grayscale(0.8) hue-rotate(180deg) brightness(0.8);
+    transition: 0.5s;
+    animation: shake 0.5s infinite alternate;
+}
+.hint-glow {
+    animation: pulse-glow 0.8s infinite alternate !important;
+    border-color: #eab308 !important;
+    background: rgba(234, 179, 8, 0.3) !important;
+    box-shadow: 0 0 15px #eab308 !important;
+    z-index: 20;
+}
+@keyframes pulse-glow {
+    from { transform: scale(1); }
+    to { transform: scale(1.15); }
+}

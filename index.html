@@ -104,8 +104,12 @@
                 </button>
             </div>
 
-            <div class="onet-board" id="onet-board">
-                </div>
+            <div id="power-ups-area" style="display: flex; gap: 8px; margin-bottom: 1rem; justify-content: center;">
+                <button class="btn-outline" onclick="usePowerUp('shuffle')" id="btn-shuffle" style="flex:1; padding: 6px; font-size: 0.8rem;"><i class="fa-solid fa-shuffle"></i> Acak (1)</button>
+                <button class="btn-outline" onclick="usePowerUp('hint')" id="btn-hint" style="flex:1; padding: 6px; font-size: 0.8rem;"><i class="fa-solid fa-lightbulb"></i> Petunjuk (1)</button>
+                <button class="btn-outline" onclick="usePowerUp('freeze')" id="btn-freeze" style="flex:1; padding: 6px; font-size: 0.8rem;"><i class="fa-solid fa-snowflake"></i> Bekukan (1)</button>
+            </div>
+            <div class="onet-board" id="onet-board"></div>
         </div>
     </div>
 
