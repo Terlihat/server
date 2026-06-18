@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebDrop P2P 7.0 (Ultimate)</title>
+    <title>WebDrop P2P 8.0 (Communicator)</title>
     
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
         :root {
             --bg-color: #f3f4f6; --text-color: #1f2937; --card-bg: #ffffff;
             --border-color: #e5e7eb; --primary: #3b82f6; --primary-dark: #2563eb;
-            --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --success: #10b981; --danger: #ef4444; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
         [data-theme="dark"] {
@@ -58,11 +58,17 @@
         .file-upload-wrapper { position: relative; margin-bottom: 1rem; }
         .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
         
-        /* Drag & Drop UI */
-        .file-upload-ui { border: 2px dashed var(--primary); padding: 2.5rem 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500; transition: 0.3s; position: relative; z-index: 1; }
+        .file-upload-ui { border: 2px dashed var(--primary); padding: 2rem 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500; transition: 0.3s; position: relative; z-index: 1; }
         .file-upload-ui.dragover { background: rgba(59, 130, 246, 0.2); border-color: var(--primary-dark); transform: scale(1.02); }
         .file-upload-ui i { font-size: 2.5rem; margin-bottom: 10px; display: block; pointer-events: none; }
         .file-upload-ui span { pointer-events: none; }
+
+        /* Text Input Area Baru */
+        .text-send-area { display: flex; gap: 8px; margin-bottom: 1rem; }
+        .text-input { flex-grow: 1; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        .text-input:focus { border-color: var(--primary); }
+        .btn-send-text { background: var(--primary); color: white; border: none; border-radius: 10px; padding: 0 1rem; cursor: pointer; transition: 0.2s; }
+        .btn-send-text:active { transform: scale(0.95); }
 
         .file-list { text-align: left; background: var(--bg-color); padding: 1rem; border-radius: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 1rem; display: none; }
         .file-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
@@ -79,9 +85,14 @@
         .log-area { text-align: left; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
         .log-area h4 { font-size: 0.9rem; color: #6b7280; margin-bottom: 10px; }
         .log-list { font-size: 0.85rem; list-style: none; }
-        .log-list li { padding: 6px 0; display: flex; align-items: center; gap: 8px; }
+        .log-list li { padding: 8px 0; display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px dashed var(--border-color); }
+        .log-list li:last-child { border-bottom: none; }
+        .log-list li i { margin-top: 3px; }
         .log-list li i.fa-check { color: var(--success); }
         .log-list li i.fa-xmark { color: var(--danger); }
+        .log-list li i.fa-message { color: var(--primary); }
+        
+        .copy-btn { margin-left: auto; background: var(--border-color); border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; color: var(--text-color); font-size: 0.75rem; }
 
         #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text-color); color: var(--bg-color); padding: 12px 24px; border-radius: 30px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; transition: 0.4s; opacity: 0; }
         #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -90,7 +101,7 @@
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 7.0</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 8.0</div>
         <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
     </header>
 
@@ -98,7 +109,7 @@
         <div id="connection-area">
             <div class="card">
                 <h3>ID Perangkat Anda</h3>
-                <div class="id-display" id="my-id">Memuat...</div>
+                <div class="id-display" id="my-id">Memuat... <i class="fa-solid fa-circle-notch fa-spin"></i></div>
                 
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="copyInviteLink()"><i class="fa-solid fa-link"></i> Salin Link</button>
@@ -110,7 +121,7 @@
                     <div id="qrcode"></div>
                 </div>
             </div>
-            <div class="card" style="margin-top: 1.2rem; opacity: 0.8;">
+            <div class="card" style="margin-top: 1.2rem; opacity: 0.8;" id="status-wait">
                 <p style="font-size: 0.9rem;"><i class="fa-solid fa-spinner fa-spin"></i> Menunggu koneksi masuk...</p>
             </div>
         </div>
@@ -118,6 +129,11 @@
         <div class="card" id="transfer-area">
             <div class="status-badge" id="status-badge"><i class="fa-solid fa-shield-check"></i> Terhubung Aman (P2P)</div>
             
+            <div class="text-send-area">
+                <input type="text" id="text-input" class="text-input" placeholder="Ketik pesan atau salin tautan (URL)...">
+                <button class="btn-send-text" id="send-text-btn" title="Kirim Teks"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+
             <div class="file-upload-wrapper" id="drop-zone">
                 <div class="file-upload-ui" id="drop-ui">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
@@ -130,7 +146,7 @@
 
             <div class="btn-group">
                 <button class="btn btn-primary" id="send-btn" disabled>
-                    <i class="fa-solid fa-paper-plane"></i> Kirim Semua
+                    <i class="fa-solid fa-file-export"></i> Kirim File
                 </button>
                 <button class="btn btn-danger" id="cancel-btn">
                     <i class="fa-solid fa-stop"></i> Batal
@@ -149,7 +165,7 @@
             <div class="log-area">
                 <h4>Riwayat Sesi Ini:</h4>
                 <ul class="log-list" id="transfer-log">
-                    <li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada file ditransfer.</li>
+                    <li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada aktivitas.</li>
                 </ul>
             </div>
         </div>
@@ -167,16 +183,13 @@
 
         themeBtn.addEventListener('click', () => {
             const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            root.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
+            root.setAttribute('data-theme', newTheme); localStorage.setItem('theme', newTheme);
             themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
         });
 
-        // --- Wake Lock API ---
+        // --- Wake Lock & Audio ---
         let wakeLock = null;
-        async function requestWakeLock() {
-            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
-        }
+        async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
         function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => wakeLock = null); } }
 
         function playSuccessSound() {
@@ -187,12 +200,11 @@
                 osc.connect(gain); gain.connect(ctx.destination);
                 osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
                 gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
-                osc.stop(ctx.currentTime + 0.4);
+                osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4); osc.stop(ctx.currentTime + 0.4);
             } catch (e) { }
         }
 
-        // --- WebRTC Logic ---
+        // --- WebRTC Logic & Server Error Fix ---
         let peer = null; let conn = null; let myIdStr = ""; let qrGenerated = false;
         
         const urlParams = new URLSearchParams(window.location.search);
@@ -204,6 +216,14 @@
         peer.on('open', (id) => {
             myIdStr = id; document.getElementById('my-id').innerText = id;
             if(autoConnectId && autoConnectId !== id) { showToast("Menghubungkan otomatis..."); connectToPeer(autoConnectId); }
+        });
+
+        // BUG FIX 2: Deteksi Error Server PeerJS
+        peer.on('error', (err) => {
+            console.error(err);
+            document.getElementById('my-id').innerHTML = '<span style="color:var(--danger); font-size:1.2rem;">Gagal Konek Server</span>';
+            document.getElementById('status-wait').innerHTML = '<p style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Server P2P sibuk. Muat ulang halaman.</p>';
+            showToast("Error: " + err.type);
         });
 
         peer.on('connection', (connection) => { conn = connection; setupConnection(); });
@@ -226,8 +246,7 @@
                 const badge = document.getElementById('status-badge');
                 badge.className = 'status-badge disconnected';
                 badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Koneksi Terputus!';
-                showToast("Teman Anda meninggalkan ruangan.");
-                setTimeout(() => location.reload(), 3000);
+                showToast("Teman Anda meninggalkan ruangan."); setTimeout(() => location.reload(), 3000);
             });
         }
 
@@ -244,6 +263,41 @@
             }
         }
 
+        // --- Fitur Kirim Teks/Pesan ---
+        const textInput = document.getElementById('text-input');
+        const sendTextBtn = document.getElementById('send-text-btn');
+
+        sendTextBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if(text && conn && conn.open) {
+                conn.send({ type: 'text', content: text });
+                addTextLog(`Anda: ${text}`, true);
+                textInput.value = "";
+            }
+        });
+
+        textInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendTextBtn.click(); });
+
+        function addTextLog(text, isSender) {
+            const emptyLog = document.getElementById('empty-log');
+            if(emptyLog) emptyLog.remove();
+            const li = document.createElement('li');
+            
+            // Sanitasi teks dasar untuk mencegah XSS
+            const safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            
+            li.innerHTML = `
+                <i class="fa-solid fa-message" style="color: ${isSender ? 'var(--text-color)' : 'var(--primary)'}"></i> 
+                <span style="word-break: break-all;">${safeText}</span>
+                <button class="copy-btn" onclick="copyToClipboard('${safeText}')">Salin</button>
+            `;
+            document.getElementById('transfer-log').prepend(li);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => showToast("Teks Disalin!"));
+        }
+
         // --- Drag & Drop & File Input ---
         let filesQueue = []; let currentFileIndex = 0; let isCancelled = false;
         const fileInput = document.getElementById('file-input');
@@ -253,25 +307,35 @@
         const dropZone = document.getElementById('drop-zone');
         const dropUI = document.getElementById('drop-ui');
 
-        // Event Listeners untuk Drag & Drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => { dropZone.addEventListener(eventName, preventDefaults, false); });
         function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-        
         ['dragenter', 'dragover'].forEach(eventName => { dropZone.addEventListener(eventName, () => dropUI.classList.add('dragover'), false); });
         ['dragleave', 'drop'].forEach(eventName => { dropZone.addEventListener(eventName, () => dropUI.classList.remove('dragover'), false); });
 
         dropZone.addEventListener('drop', (e) => {
-            if(sendBtn.disabled && filesQueue.length > 0) return; // Cegah drop saat sedang mengirim
-            let dt = e.dataTransfer; let files = dt.files;
-            handleFiles(files);
+            if(sendBtn.disabled && filesQueue.length > 0) return;
+            handleFiles(e.dataTransfer.files);
         });
 
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
         function handleFiles(files) {
-            filesQueue = Array.from(files);
+            const rawFiles = Array.from(files);
+            filesQueue = [];
+            
+            // BUG FIX 1: Filter batas maksimal ukuran file (Max 2GB per file)
+            const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2 Gigabytes
+            let rejectedCount = 0;
+
+            rawFiles.forEach(f => {
+                if (f.size > MAX_SIZE) { rejectedCount++; } 
+                else { filesQueue.push(f); }
+            });
+
+            if (rejectedCount > 0) {
+                alert(`⚠️ ${rejectedCount} file diabaikan karena ukurannya melebihi 2 GB. Browser HP tidak dapat memproses file sebesar itu secara stabil.`);
+            }
+
             if (filesQueue.length > 0) {
                 fileListDisplay.style.display = 'block'; fileListDisplay.innerHTML = "";
                 filesQueue.forEach(f => {
@@ -282,7 +346,9 @@
                     }
                     fileListDisplay.innerHTML += `<div class="file-item">${thumbHtml}<div class="file-info"><div class="file-name">${f.name}</div><div class="file-size">${formatBytes(f.size)}</div></div></div>`;
                 });
-                sendBtn.disabled = false; sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim ${filesQueue.length} File`;
+                sendBtn.disabled = false; sendBtn.innerHTML = `<i class="fa-solid fa-file-export"></i> Kirim ${filesQueue.length} File`;
+            } else {
+                fileListDisplay.style.display = 'none'; sendBtn.disabled = true;
             }
         }
 
@@ -295,12 +361,9 @@
         });
 
         cancelBtn.addEventListener('click', () => {
-            isCancelled = true;
-            conn.send({ type: 'cancel' }); // Beritahu target
-            addToLog(`Dibatalkan oleh Anda.`, false);
-            showToast("Pengiriman dibatalkan.");
-            resetUIAfterSend();
-            releaseWakeLock();
+            isCancelled = true; conn.send({ type: 'cancel' });
+            addToLog(`Dibatalkan oleh Anda.`, false); showToast("Pengiriman dibatalkan.");
+            resetUIAfterSend(); releaseWakeLock();
         });
 
         function processNextFileInQueue() {
@@ -312,7 +375,6 @@
         }
 
         function sendFile(file) {
-            // BUG FIX 1: Tangani file 0 byte agar tidak NaN / Crash
             if (file.size === 0) {
                 addToLog(`File kosong dilewati: ${file.name}`, false);
                 currentFileIndex++; setTimeout(processNextFileInQueue, 100); return;
@@ -327,8 +389,7 @@
             let startTime = performance.now(); let lastUpdate = startTime; let bytesSinceLastUpdate = 0;
 
             function readAndSendNextChunk() {
-                if (isCancelled) return; // Berhenti jika tombol Batal ditekan
-
+                if (isCancelled) return;
                 if (conn.dataChannel.bufferedAmount > 1048576) { setTimeout(readAndSendNextChunk, 10); return; }
 
                 const slice = file.slice(offset, offset + CHUNK_SIZE);
@@ -367,19 +428,21 @@
         let rcvStartTime = 0; let rcvLastUpdate = 0; let rcvBytesSinceLastUpdate = 0;
 
         function handleIncomingData(data) {
-            if (data.type === 'cancel') {
+            if (data.type === 'text') {
+                playSuccessSound();
+                addTextLog(`Teman: ${data.content}`, false);
+                showToast("Pesan teks diterima!");
+            }
+            else if (data.type === 'cancel') {
                 receiveBuffer = []; receivedSize = 0;
                 document.getElementById('progress-container').style.display = 'none';
                 document.getElementById('stats-area').style.display = 'none';
                 addToLog(`Pengiriman dibatalkan oleh pengirim.`, false);
-                showToast("Pengirim membatalkan transfer.");
-                releaseWakeLock();
+                showToast("Pengirim membatalkan transfer."); releaseWakeLock();
             }
             else if (data.type === 'meta') {
-                incomingFileInfo = data; receiveBuffer = []; receivedSize = 0;
-                requestWakeLock();
-                document.getElementById('progress-container').style.display = 'block';
-                document.getElementById('stats-area').style.display = 'flex';
+                incomingFileInfo = data; receiveBuffer = []; receivedSize = 0; requestWakeLock();
+                document.getElementById('progress-container').style.display = 'block'; document.getElementById('stats-area').style.display = 'flex';
                 rcvStartTime = performance.now(); rcvLastUpdate = rcvStartTime; rcvBytesSinceLastUpdate = 0;
             } 
             else if (data.type === 'chunk') {
@@ -402,10 +465,7 @@
                 receiveBuffer = []; receivedSize = 0; 
                 addToLog(`Diterima: ${incomingFileInfo.name}`);
                 playSuccessSound(); releaseWakeLock();
-                setTimeout(() => {
-                    document.getElementById('progress-container').style.display = 'none';
-                    document.getElementById('stats-area').style.display = 'none';
-                }, 2000);
+                setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
             }
         }
 
@@ -418,14 +478,12 @@
         }
 
         function resetUIAfterSend() {
-            document.getElementById('progress-container').style.display = 'none';
-            document.getElementById('stats-area').style.display = 'none';
+            document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none';
             document.getElementById('progress-bar').style.width = '0%';
             fileInput.value = ""; fileInput.disabled = false;
             fileListDisplay.style.display = 'none'; filesQueue = [];
-            sendBtn.style.display = 'block'; sendBtn.disabled = true;
-            cancelBtn.style.display = 'none';
-            sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Semua`;
+            sendBtn.style.display = 'block'; sendBtn.disabled = true; cancelBtn.style.display = 'none';
+            sendBtn.innerHTML = `<i class="fa-solid fa-file-export"></i> Kirim Semua`;
         }
 
         function addToLog(message, isSuccess = true) {
@@ -433,7 +491,7 @@
             if(emptyLog) emptyLog.remove();
             const li = document.createElement('li');
             const icon = isSuccess ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-xmark"></i>';
-            li.innerHTML = `${icon} ${message}`;
+            li.innerHTML = `${icon} <span style="flex-grow:1;">${message}</span>`;
             document.getElementById('transfer-log').prepend(li);
         }
 
