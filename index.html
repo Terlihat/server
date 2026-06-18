@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>P2P File Transfer</title>
+    <title>WebDrop P2P 3.0</title>
     
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,174 +12,128 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <style>
-        /* --- CSS Variables untuk Tema --- */
         :root {
-            --bg-color: #f3f4f6;
-            --text-color: #1f2937;
-            --card-bg: #ffffff;
-            --border-color: #e5e7eb;
-            --primary: #3b82f6;
-            --primary-dark: #2563eb;
-            --success: #10b981;
-            --danger: #ef4444;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --bg-color: #f3f4f6; --text-color: #1f2937; --card-bg: #ffffff;
+            --border-color: #e5e7eb; --primary: #3b82f6; --primary-dark: #2563eb;
+            --success: #10b981; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
         [data-theme="dark"] {
-            --bg-color: #0f172a;
-            --text-color: #f8fafc;
-            --card-bg: #1e293b;
-            --border-color: #334155;
-            --primary: #60a5fa;
-            --primary-dark: #3b82f6;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            --bg-color: #0f172a; --text-color: #f8fafc; --card-bg: #1e293b;
+            --border-color: #334155; --primary: #60a5fa; --primary-dark: #3b82f6;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.5);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            background-color: var(--bg-color); color: var(--text-color);
-            transition: 0.3s ease; display: flex; flex-direction: column; min-height: 100vh;
-        }
+        body { background-color: var(--bg-color); color: var(--text-color); transition: 0.3s; display: flex; flex-direction: column; min-height: 100vh; }
 
-        /* --- Header (Mobile Style) --- */
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 1.5rem; background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            position: sticky; top: 0; z-index: 10;
-        }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 1.5rem; background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
         .brand { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
         .brand i { color: var(--primary); }
-        .theme-btn {
-            background: transparent; border: none; font-size: 1.2rem; color: var(--text-color); cursor: pointer;
-        }
+        .theme-btn { background: transparent; border: none; font-size: 1.2rem; color: var(--text-color); cursor: pointer; }
 
-        /* --- Container Utama --- */
-        .container { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; gap: 1.5rem; max-width: 600px; margin: 0 auto; width: 100%; }
+        .container { padding: 1.5rem; flex-grow: 1; max-width: 600px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 1.2rem; }
 
-        /* --- Cards --- */
-        .card {
-            background: var(--card-bg); border-radius: 16px; padding: 1.5rem;
-            box-shadow: var(--shadow); border: 1px solid var(--border-color); text-align: center;
-        }
+        .card { background: var(--card-bg); border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border-color); text-align: center; }
         .card h3 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-color); font-weight: 600; }
 
-        /* --- Tampilan ID --- */
-        .id-display {
-            background: var(--bg-color); padding: 1rem; border-radius: 12px;
-            font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; color: var(--primary);
-            margin-bottom: 1rem; word-break: break-all;
-        }
-
-        /* --- Input & Buttons (Touch-Friendly) --- */
-        input[type="text"] {
-            width: 100%; padding: 1rem; border-radius: 12px; border: 2px solid var(--border-color);
-            background: var(--bg-color); color: var(--text-color); font-size: 1.1rem;
-            text-align: center; outline: none; margin-bottom: 1rem; transition: 0.2s;
-        }
+        .id-display { background: var(--bg-color); padding: 1rem; border-radius: 12px; font-size: 1.8rem; font-weight: 700; letter-spacing: 3px; color: var(--primary); margin-bottom: 1rem; }
+        
+        input[type="text"] { width: 100%; padding: 1rem; border-radius: 12px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 1.1rem; text-align: center; outline: none; margin-bottom: 1rem; }
         input[type="text"]:focus { border-color: var(--primary); }
 
-        .btn {
-            width: 100%; padding: 1rem; border-radius: 12px; border: none;
-            font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s;
-            display: flex; justify-content: center; align-items: center; gap: 10px;
-        }
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3); }
-        .btn-primary:active { background: var(--primary-dark); transform: scale(0.98); }
-        
+        .btn { width: 100%; padding: 1rem; border-radius: 12px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 0.5rem; }
+        .btn-primary { background: var(--primary); color: white; }
         .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-outline:active { background: rgba(59, 130, 246, 0.1); }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* --- Transfer Area (Hidden Default) --- */
         #transfer-area { display: none; }
-        .status-badge {
-            display: inline-block; padding: 0.4rem 1rem; border-radius: 20px;
-            font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem;
-            background: rgba(16, 185, 129, 0.1); color: var(--success);
-        }
+        .status-badge { display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; background: rgba(16, 185, 129, 0.1); color: var(--success); }
 
-        /* --- Custom File Input --- */
-        .file-upload-wrapper { position: relative; margin-bottom: 1.5rem; }
-        .file-upload-wrapper input[type="file"] {
-            position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
-        }
-        .file-upload-ui {
-            border: 2px dashed var(--primary); padding: 2rem 1rem; border-radius: 12px;
-            background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500;
-        }
+        .file-upload-wrapper { position: relative; margin-bottom: 1rem; }
+        .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .file-upload-ui { border: 2px dashed var(--primary); padding: 2rem 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500; }
         .file-upload-ui i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
 
-        #selected-file-name { display: block; margin-top: 10px; font-size: 0.9rem; color: var(--text-color); word-break: break-all; }
+        .file-list { text-align: left; background: var(--bg-color); padding: 1rem; border-radius: 8px; font-size: 0.9rem; max-height: 150px; overflow-y: auto; margin-bottom: 1rem; display: none; }
+        .file-list li { margin-bottom: 5px; list-style-type: none; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
 
-        /* --- Progress Bar --- */
         .progress-container { width: 100%; background: var(--border-color); border-radius: 10px; height: 12px; overflow: hidden; margin-top: 1rem; display: none; }
         .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
-        .progress-text { font-size: 0.9rem; margin-top: 8px; font-weight: 500; display: none; }
+        .progress-text { font-size: 0.9rem; margin-top: 8px; font-weight: 600; display: none; color: var(--primary); }
 
-        /* --- Toast Notification --- */
-        #toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
-            background: var(--text-color); color: var(--bg-color); padding: 12px 24px; border-radius: 30px;
-            font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000;
-            transition: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); opacity: 0;
-        }
+        .log-area { text-align: left; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
+        .log-area h4 { font-size: 0.9rem; color: #6b7280; margin-bottom: 10px; }
+        .log-list { font-size: 0.85rem; list-style: none; }
+        .log-list li { padding: 6px 0; display: flex; align-items: center; gap: 8px; }
+        .log-list li i.fa-check { color: var(--success); }
+
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text-color); color: var(--bg-color); padding: 12px 24px; border-radius: 30px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; transition: 0.4s; opacity: 0; }
         #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
     </style>
 </head>
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-paper-plane"></i> WebDrop</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 3.0</div>
         <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
     </header>
 
     <div class="container">
         <div id="connection-area">
-            <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card">
                 <h3>ID Perangkat Anda</h3>
-                <div class="id-display" id="my-id">Memuat...</div>
-                <button class="btn btn-outline" onclick="copyMyId()"><i class="fa-regular fa-copy"></i> Salin ID</button>
+                <div class="id-display" id="my-id">...</div>
+                <button class="btn btn-primary" onclick="copyInviteLink()"><i class="fa-solid fa-share-nodes"></i> Salin Link Undangan</button>
+                <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.7;">Kirim link ini ke teman untuk otomatis terhubung</p>
             </div>
 
-            <div class="card">
-                <h3>Hubungkan ke Teman</h3>
-                <input type="text" id="peer-id-input" placeholder="Masukkan ID Teman">
-                <button class="btn btn-primary" id="connect-btn"><i class="fa-solid fa-link"></i> Hubungkan</button>
+            <div class="card" style="margin-top: 1.2rem;">
+                <h3>Atau Masukkan ID Teman</h3>
+                <input type="text" id="peer-id-input" placeholder="Contoh: 4921">
+                <button class="btn btn-outline" id="connect-btn"><i class="fa-solid fa-link"></i> Hubungkan Manual</button>
             </div>
         </div>
 
         <div class="card" id="transfer-area">
-            <div class="status-badge"><i class="fa-solid fa-check-circle"></i> Terhubung!</div>
+            <div class="status-badge"><i class="fa-solid fa-shield-check"></i> Terhubung Aman (P2P)</div>
             
             <div class="file-upload-wrapper">
                 <div class="file-upload-ui">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span>Ketuk untuk pilih file besar</span>
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>Ketuk untuk pilih beberapa file</span>
                 </div>
-                <input type="file" id="file-input">
+                <input type="file" id="file-input" multiple>
             </div>
             
-            <span id="selected-file-name">Belum ada file dipilih</span>
+            <ul class="file-list" id="file-list"></ul>
 
-            <button class="btn btn-primary" id="send-btn" style="margin-top: 1.5rem;" disabled>
-                <i class="fa-solid fa-share-nodes"></i> Kirim File
+            <button class="btn btn-primary" id="send-btn" disabled>
+                <i class="fa-solid fa-paper-plane"></i> Kirim Semua
             </button>
 
             <div class="progress-container" id="progress-container">
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
             <div class="progress-text" id="progress-text">0%</div>
+
+            <div class="log-area">
+                <h4>Riwayat Sesi Ini:</h4>
+                <ul class="log-list" id="transfer-log">
+                    <li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada file ditransfer.</li>
+                </ul>
+            </div>
         </div>
     </div>
 
     <div id="toast">Notifikasi</div>
 
     <script>
-        // --- Dark/Light Mode ---
-        const themeBtn = document.getElementById('theme-toggle');
+        // --- Tema Setup ---
         const root = document.documentElement;
-        const savedTheme = localStorage.getItem('theme') || 'dark'; // Default Dark untuk mobile
+        const themeBtn = document.getElementById('theme-toggle');
+        const savedTheme = localStorage.getItem('theme') || 'dark';
         root.setAttribute('data-theme', savedTheme);
         themeBtn.innerHTML = savedTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
 
@@ -190,206 +144,206 @@
             themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
         });
 
-        // --- Variabel WebRTC ---
-        let peer = null;
-        let conn = null; // Koneksi aktif
-        let myIdStr = "";
-
-        // UI Elements
-        const connectionArea = document.getElementById('connection-area');
-        const transferArea = document.getElementById('transfer-area');
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress-bar');
-        const progressText = document.getElementById('progress-text');
-        const fileInput = document.getElementById('file-input');
-        const sendBtn = document.getElementById('send-btn');
-        const fileNameDisplay = document.getElementById('selected-file-name');
-
-        // --- Inisialisasi PeerJS ---
-        // Menghasilkan ID acak 4 digit angka agar mudah diketik di HP
-        const randomId = Math.floor(1000 + Math.random() * 9000).toString();
+        // --- WebRTC Logic ---
+        let peer = null; let conn = null; let myIdStr = "";
         
-        peer = new Peer(randomId, {
-            debug: 2
-        });
+        // Cek apakah ada parameter ID di URL (Auto-Connect fitur)
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoConnectId = urlParams.get('connect');
+
+        const randomId = Math.floor(1000 + Math.random() * 9000).toString();
+        peer = new Peer(randomId, { debug: 1 });
 
         peer.on('open', (id) => {
             myIdStr = id;
             document.getElementById('my-id').innerText = id;
+            
+            // Jika ada link undangan, otomatis hubungkan!
+            if(autoConnectId && autoConnectId !== id) {
+                showToast("Menghubungkan otomatis ke " + autoConnectId);
+                connectToPeer(autoConnectId);
+            }
         });
 
-        // Menerima Koneksi Masuk
         peer.on('connection', (connection) => {
             conn = connection;
             setupConnection();
         });
 
-        // Memulai Koneksi ke ID Lain
         document.getElementById('connect-btn').addEventListener('click', () => {
             const targetId = document.getElementById('peer-id-input').value.trim();
-            if(!targetId) return showToast("Masukkan ID dulu!");
-            
-            showToast("Menghubungkan...");
-            conn = peer.connect(targetId);
-            
-            conn.on('open', () => {
-                setupConnection();
-            });
-            
-            conn.on('error', (err) => {
-                showToast("Koneksi gagal!");
-            });
+            if(targetId) connectToPeer(targetId);
         });
 
-        function setupConnection() {
-            showToast("Berhasil Terhubung!");
-            connectionArea.style.display = 'none';
-            transferArea.style.display = 'block';
-
-            // Menangani penerimaan data (Metode Chunking)
-            conn.on('data', handleIncomingData);
+        function connectToPeer(targetId) {
+            conn = peer.connect(targetId);
+            conn.on('open', () => setupConnection());
+            conn.on('error', () => showToast("Gagal terhubung!"));
         }
 
-        // --- Logika Input File ---
-        let selectedFile = null;
+        function setupConnection() {
+            document.getElementById('connection-area').style.display = 'none';
+            document.getElementById('transfer-area').style.display = 'block';
+            showToast("Berhasil Terhubung!");
+            conn.on('data', handleIncomingData);
+            
+            // Bersihkan URL bar agar terlihat rapi
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // --- Multi-File Logic ---
+        let filesQueue = [];
+        let currentFileIndex = 0;
+        
+        const fileInput = document.getElementById('file-input');
+        const fileListDisplay = document.getElementById('file-list');
+        const sendBtn = document.getElementById('send-btn');
+        const transferLog = document.getElementById('transfer-log');
+
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                selectedFile = e.target.files[0];
-                fileNameDisplay.innerText = selectedFile.name + " (" + formatBytes(selectedFile.size) + ")";
+            filesQueue = Array.from(e.target.files);
+            if (filesQueue.length > 0) {
+                fileListDisplay.style.display = 'block';
+                fileListDisplay.innerHTML = "";
+                filesQueue.forEach(f => {
+                    fileListDisplay.innerHTML += `<li><i class="fa-regular fa-file"></i> ${f.name} (${formatBytes(f.size)})</li>`;
+                });
                 sendBtn.disabled = false;
+                sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim ${filesQueue.length} File`;
             }
         });
 
-        // --- Logika Pengiriman File (Chunking 256KB agar RAM aman) ---
         sendBtn.addEventListener('click', () => {
-            if (!selectedFile) return;
-            
+            if (filesQueue.length === 0) return;
             sendBtn.disabled = true;
-            progressContainer.style.display = 'block';
-            progressText.style.display = 'block';
+            fileInput.disabled = true;
+            currentFileIndex = 0;
+            processNextFileInQueue();
+        });
+
+        function processNextFileInQueue() {
+            if (currentFileIndex >= filesQueue.length) {
+                showToast("Semua file selesai dikirim!");
+                resetUIAfterSend();
+                return;
+            }
+            sendFile(filesQueue[currentFileIndex]);
+        }
+
+        function sendFile(file) {
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('progress-text').style.display = 'block';
             
-            const CHUNK_SIZE = 256 * 1024; // 256 KB per potong
+            const CHUNK_SIZE = 256 * 1024; // 256 KB
             let offset = 0;
 
-            // 1. Kirim Metadata (Nama dan Ukuran File)
-            conn.send({
-                type: 'meta',
-                name: selectedFile.name,
-                size: selectedFile.size,
-                mime: selectedFile.type
-            });
+            conn.send({ type: 'meta', name: file.name, size: file.size, mime: file.type });
 
-            // 2. Fungsi untuk membaca dan mengirim potongan
             function readAndSendNextChunk() {
-                const slice = selectedFile.slice(offset, offset + CHUNK_SIZE);
+                const slice = file.slice(offset, offset + CHUNK_SIZE);
                 const reader = new FileReader();
 
                 reader.onload = (e) => {
-                    const arrayBuffer = e.target.result;
-                    conn.send({
-                        type: 'chunk',
-                        data: arrayBuffer
-                    });
-
-                    offset += arrayBuffer.byteLength;
+                    conn.send({ type: 'chunk', data: e.target.result });
+                    offset += e.target.result.byteLength;
                     
-                    // Update UI Progress
-                    const percent = Math.round((offset / selectedFile.size) * 100);
-                    updateProgress(percent, "Mengirim...");
+                    const percent = Math.round((offset / file.size) * 100);
+                    updateProgress(percent, `Mengirim (${currentFileIndex + 1}/${filesQueue.length}): ${file.name}`);
 
-                    if (offset < selectedFile.size) {
-                        // Delay super kecil agar WebRTC punya nafas mengosongkan buffer
-                        setTimeout(readAndSendNextChunk, 5); 
+                    if (offset < file.size) {
+                        setTimeout(readAndSendNextChunk, 2); 
                     } else {
-                        // 3. Kirim penanda selesai (EOF)
                         conn.send({ type: 'eof' });
-                        updateProgress(100, "Selesai dikirim!");
-                        setTimeout(() => resetUI(), 3000);
+                        addToLog(`Terkirim: ${file.name}`);
+                        currentFileIndex++;
+                        setTimeout(processNextFileInQueue, 500); // Lanjut ke file berikutnya
                     }
                 };
                 reader.readAsArrayBuffer(slice);
             }
-
-            // Mulai mengirim potongan pertama
             readAndSendNextChunk();
-        });
+        }
 
-        // --- Logika Penerimaan File ---
+        // --- Penerimaan Data ---
         let receiveBuffer = [];
         let receivedSize = 0;
         let incomingFileInfo = null;
 
         function handleIncomingData(data) {
-            // Menerima Metadata
             if (data.type === 'meta') {
                 incomingFileInfo = data;
-                receiveBuffer = [];
-                receivedSize = 0;
-                progressContainer.style.display = 'block';
-                progressText.style.display = 'block';
-                showToast("Menerima file...");
+                receiveBuffer = []; receivedSize = 0;
+                document.getElementById('progress-container').style.display = 'block';
+                document.getElementById('progress-text').style.display = 'block';
             } 
-            // Menerima Potongan File
             else if (data.type === 'chunk') {
                 receiveBuffer.push(data.data);
                 receivedSize += data.data.byteLength;
-                
                 const percent = Math.round((receivedSize / incomingFileInfo.size) * 100);
-                updateProgress(percent, "Menerima...");
+                updateProgress(percent, `Menerima: ${incomingFileInfo.name}`);
             } 
-            // File Selesai Diterima
             else if (data.type === 'eof') {
-                updateProgress(100, "Selesai! Menyimpan...");
-                
-                // Gabungkan semua potongan menjadi satu file utuh (Blob)
                 const blob = new Blob(receiveBuffer, { type: incomingFileInfo.mime });
-                
-                // Paksa browser untuk mendownload file tersebut
                 downloadFile(blob, incomingFileInfo.name);
+                addToLog(`Diterima: ${incomingFileInfo.name}`);
                 
-                showToast("File berhasil disimpan!");
-                setTimeout(() => resetUI(), 3000);
+                // Reset progress UI jika penerimaan selesai
+                setTimeout(() => {
+                    document.getElementById('progress-container').style.display = 'none';
+                    document.getElementById('progress-text').style.display = 'none';
+                }, 2000);
             }
         }
 
-        // --- Fungsi Utilitas ---
+        // --- Utilities ---
         function updateProgress(percent, text) {
-            progressBar.style.width = percent + '%';
-            progressText.innerText = `${text} ${percent}%`;
+            document.getElementById('progress-bar').style.width = percent + '%';
+            document.getElementById('progress-text').innerText = `${text} (${percent}%)`;
         }
 
-        function resetUI() {
-            progressContainer.style.display = 'none';
-            progressText.style.display = 'none';
-            progressBar.style.width = '0%';
-            fileInput.value = "";
-            selectedFile = null;
-            fileNameDisplay.innerText = "Belum ada file dipilih";
+        function resetUIAfterSend() {
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('progress-text').style.display = 'none';
+            document.getElementById('progress-bar').style.width = '0%';
+            fileInput.value = ""; fileInput.disabled = false;
+            fileListDisplay.style.display = 'none';
+            filesQueue = [];
             sendBtn.disabled = true;
+            sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Semua`;
+        }
+
+        function addToLog(message) {
+            const emptyLog = document.getElementById('empty-log');
+            if(emptyLog) emptyLog.remove();
+            
+            const li = document.createElement('li');
+            li.innerHTML = `<i class="fa-solid fa-check"></i> ${message}`;
+            transferLog.prepend(li);
         }
 
         function downloadFile(blob, filename) {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
+            a.style.display = 'none'; a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click();
             window.URL.revokeObjectURL(url);
         }
 
-        function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024, dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        function copyInviteLink() {
+            // Membuat link yang menyertakan parameter '?connect=ID'
+            const currentUrl = window.location.origin + window.location.pathname;
+            const inviteLink = `${currentUrl}?connect=${myIdStr}`;
+            
+            navigator.clipboard.writeText(inviteLink).then(() => {
+                showToast("Link Disalin! Kirim ke teman Anda.");
+            });
         }
 
-        function copyMyId() {
-            navigator.clipboard.writeText(myIdStr);
-            showToast("ID Disalin!");
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
         function showToast(msg) {
