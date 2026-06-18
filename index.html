@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebDrop P2P 5.0 (Stable)</title>
+    <title>WebDrop P2P 6.0 (Pro)</title>
     
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -47,7 +47,6 @@
         .btn:active { transform: scale(0.98); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* QR Code Styling */
         #qr-box { display: none; margin-top: 1.5rem; padding: 1.5rem; background: white; border-radius: 12px; border: 2px dashed var(--primary); }
         #qrcode { display: flex; justify-content: center; margin-top: 10px; }
 
@@ -61,7 +60,6 @@
         .file-upload-ui:active { background: rgba(59, 130, 246, 0.15); }
         .file-upload-ui i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
 
-        /* File List with Thumbnails */
         .file-list { text-align: left; background: var(--bg-color); padding: 1rem; border-radius: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 1rem; display: none; }
         .file-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
         .file-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
@@ -72,7 +70,9 @@
 
         .progress-container { width: 100%; background: var(--border-color); border-radius: 10px; height: 12px; overflow: hidden; margin-top: 1rem; display: none; }
         .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
-        .progress-text { font-size: 0.9rem; margin-top: 8px; font-weight: 600; display: none; color: var(--primary); text-align: center; }
+        
+        /* Stats Area Baru (Kecepatan & ETA) */
+        .stats-area { display: none; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; font-weight: 600; color: var(--primary); }
 
         .log-area { text-align: left; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
         .log-area h4 { font-size: 0.9rem; color: #6b7280; margin-bottom: 10px; }
@@ -87,7 +87,7 @@
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 5.0</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 6.0</div>
         <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
     </header>
 
@@ -132,7 +132,11 @@
             <div class="progress-container" id="progress-container">
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
-            <div class="progress-text" id="progress-text">0%</div>
+            <div class="stats-area" id="stats-area">
+                <span id="progress-text">0%</span>
+                <span id="speed-text">0 MB/s</span>
+                <span id="eta-text">--:--</span>
+            </div>
 
             <div class="log-area">
                 <h4>Riwayat Sesi Ini:</h4>
@@ -160,26 +164,39 @@
             themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
         });
 
-        // --- Fitur Audio (Sintesis Suara Ting!) ---
+        // --- BUG FIX 1: Wake Lock API (Mencegah Layar Mati) ---
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock diaktifkan.');
+                }
+            } catch (err) { console.warn('Wake Lock gagal:', err); }
+        }
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => { wakeLock = null; console.log('Screen Wake Lock dilepas.'); });
+            }
+        }
+
+        // --- Fitur Audio ---
         function playSuccessSound() {
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return; // Abaikan jika browser tidak support
+                if (!AudioContext) return;
                 const ctx = new AudioContext();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.type = 'sine'; // Suara bulat
-                osc.frequency.setValueAtTime(880, ctx.currentTime); // Nada A5
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
                 gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                osc.start();
-                gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+                osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
                 osc.stop(ctx.currentTime + 0.4);
-            } catch (e) { console.warn("Audio failed", e); }
+            } catch (e) { }
         }
 
-        // --- WebRTC Logic & BUG FIXES ---
+        // --- WebRTC Logic ---
         let peer = null; let conn = null; let myIdStr = ""; let qrGenerated = false;
         
         const urlParams = new URLSearchParams(window.location.search);
@@ -189,18 +206,13 @@
         peer = new Peer(randomId, { debug: 1 });
 
         peer.on('open', (id) => {
-            myIdStr = id;
-            document.getElementById('my-id').innerText = id;
+            myIdStr = id; document.getElementById('my-id').innerText = id;
             if(autoConnectId && autoConnectId !== id) {
-                showToast("Menghubungkan otomatis...");
-                connectToPeer(autoConnectId);
+                showToast("Menghubungkan otomatis..."); connectToPeer(autoConnectId);
             }
         });
 
-        peer.on('connection', (connection) => {
-            conn = connection;
-            setupConnection();
-        });
+        peer.on('connection', (connection) => { conn = connection; setupConnection(); });
 
         function connectToPeer(targetId) {
             conn = peer.connect(targetId);
@@ -216,35 +228,33 @@
             
             conn.on('data', handleIncomingData);
             
-            // BUG FIX 2: Penanganan Jika Koneksi Terputus
             conn.on('close', () => {
+                releaseWakeLock(); // Lepas kunci layar jika teman keluar
                 const badge = document.getElementById('status-badge');
                 badge.className = 'status-badge disconnected';
                 badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Koneksi Terputus!';
                 showToast("Teman Anda meninggalkan ruangan.");
-                setTimeout(() => location.reload(), 3000); // Muat ulang halaman setelah 3 detik
+                setTimeout(() => location.reload(), 3000);
             });
         }
 
-        // --- QR Code Generator ---
+        // --- QR Code ---
         function toggleQR() {
             const qrBox = document.getElementById('qr-box');
-            if (qrBox.style.display === 'block') {
-                qrBox.style.display = 'none';
-            } else {
+            if (qrBox.style.display === 'block') { qrBox.style.display = 'none'; } 
+            else {
                 qrBox.style.display = 'block';
                 if (!qrGenerated) {
                     const inviteLink = window.location.origin + window.location.pathname + "?connect=" + myIdStr;
                     new QRCode(document.getElementById("qrcode"), {
-                        text: inviteLink, width: 150, height: 150,
-                        colorDark : "#1f2937", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
+                        text: inviteLink, width: 150, height: 150, colorDark : "#1f2937", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
                     });
                     qrGenerated = true;
                 }
             }
         }
 
-        // --- Multi-File & Thumbnail Logic ---
+        // --- File Input ---
         let filesQueue = []; let currentFileIndex = 0;
         const fileInput = document.getElementById('file-input');
         const fileListDisplay = document.getElementById('file-list');
@@ -253,64 +263,94 @@
         fileInput.addEventListener('change', (e) => {
             filesQueue = Array.from(e.target.files);
             if (filesQueue.length > 0) {
-                fileListDisplay.style.display = 'block';
-                fileListDisplay.innerHTML = "";
-                
+                fileListDisplay.style.display = 'block'; fileListDisplay.innerHTML = "";
                 filesQueue.forEach(f => {
                     let thumbHtml = `<div class="file-thumb"><i class="fa-solid fa-file"></i></div>`;
                     if (f.type.startsWith('image/')) {
                         const imgUrl = URL.createObjectURL(f);
                         thumbHtml = `<img src="${imgUrl}" class="file-thumb">`;
                     }
-                    fileListDisplay.innerHTML += `
-                        <div class="file-item">
-                            ${thumbHtml}
-                            <div class="file-info">
-                                <div class="file-name">${f.name}</div>
-                                <div class="file-size">${formatBytes(f.size)}</div>
-                            </div>
-                        </div>`;
+                    fileListDisplay.innerHTML += `<div class="file-item">${thumbHtml}<div class="file-info"><div class="file-name">${f.name}</div><div class="file-size">${formatBytes(f.size)}</div></div></div>`;
                 });
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim ${filesQueue.length} File`;
+                sendBtn.disabled = false; sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim ${filesQueue.length} File`;
             }
         });
 
         sendBtn.addEventListener('click', () => {
             if (filesQueue.length === 0) return;
             sendBtn.disabled = true; fileInput.disabled = true;
-            currentFileIndex = 0; processNextFileInQueue();
+            currentFileIndex = 0; 
+            requestWakeLock(); // Aktifkan anti-tidur saat kirim file
+            processNextFileInQueue();
         });
 
         function processNextFileInQueue() {
             if (currentFileIndex >= filesQueue.length) {
                 showToast("Semua file terkirim!");
                 resetUIAfterSend();
+                releaseWakeLock(); // Lepas layar saat semua selesai
                 return;
             }
             sendFile(filesQueue[currentFileIndex]);
         }
 
+        // --- Algoritma Pengiriman Baru (Backpressure & Speedometer) ---
         function sendFile(file) {
             document.getElementById('progress-container').style.display = 'block';
-            document.getElementById('progress-text').style.display = 'block';
+            document.getElementById('stats-area').style.display = 'flex';
             
             const CHUNK_SIZE = 256 * 1024; let offset = 0;
             conn.send({ type: 'meta', name: file.name, size: file.size, mime: file.type });
 
+            // Variabel untuk menghitung Speed & ETA
+            let startTime = performance.now();
+            let lastUpdate = startTime;
+            let bytesSinceLastUpdate = 0;
+
             function readAndSendNextChunk() {
+                // BUG FIX 2: Backpressure (Rem Otomatis jika Jaringan Penuh)
+                // Jika antrean WebRTC lebih dari 1 MB (1048576 bytes), tunggu sebentar
+                if (conn.dataChannel.bufferedAmount > 1048576) {
+                    setTimeout(readAndSendNextChunk, 10);
+                    return;
+                }
+
                 const slice = file.slice(offset, offset + CHUNK_SIZE);
                 const reader = new FileReader();
 
                 reader.onload = (e) => {
-                    conn.send({ type: 'chunk', data: e.target.result });
-                    offset += e.target.result.byteLength;
+                    const chunkData = e.target.result;
+                    conn.send({ type: 'chunk', data: chunkData });
                     
-                    const percent = Math.round((offset / file.size) * 100);
-                    updateProgress(percent, `Mengirim (${currentFileIndex + 1}/${filesQueue.length})...`);
+                    offset += chunkData.byteLength;
+                    bytesSinceLastUpdate += chunkData.byteLength;
+                    
+                    const now = performance.now();
+                    const timeDiff = now - lastUpdate;
 
-                    if (offset < file.size) { setTimeout(readAndSendNextChunk, 2); } 
-                    else {
+                    // Update UI setiap ~250ms agar tidak lag
+                    if (timeDiff >= 250 || offset >= file.size) {
+                        const percent = Math.round((offset / file.size) * 100);
+                        
+                        // Hitung Kecepatan (MB/s)
+                        const speedBps = (bytesSinceLastUpdate / (timeDiff / 1000));
+                        const speedText = formatBytes(speedBps) + '/s';
+                        
+                        // Hitung ETA (Sisa Waktu)
+                        const bytesRemaining = file.size - offset;
+                        const etaSeconds = speedBps > 0 ? Math.ceil(bytesRemaining / speedBps) : 0;
+                        const etaText = formatTime(etaSeconds);
+
+                        updateStats(percent, speedText, etaText);
+                        
+                        lastUpdate = now;
+                        bytesSinceLastUpdate = 0;
+                    }
+
+                    if (offset < file.size) { 
+                        // Langsung hajar loop berikutnya jika buffer aman
+                        setTimeout(readAndSendNextChunk, 0); 
+                    } else {
                         conn.send({ type: 'eof' });
                         addToLog(`Terkirim: ${file.name}`);
                         currentFileIndex++;
@@ -322,53 +362,74 @@
             readAndSendNextChunk();
         }
 
-        // --- Penerimaan Data & Memory Management ---
+        // --- Penerimaan Data & Stats ---
         let receiveBuffer = []; let receivedSize = 0; let incomingFileInfo = null;
+        let rcvStartTime = 0; let rcvLastUpdate = 0; let rcvBytesSinceLastUpdate = 0;
 
         function handleIncomingData(data) {
             if (data.type === 'meta') {
                 incomingFileInfo = data; receiveBuffer = []; receivedSize = 0;
+                requestWakeLock(); // Aktifkan anti-tidur saat menerima file
+                
                 document.getElementById('progress-container').style.display = 'block';
-                document.getElementById('progress-text').style.display = 'block';
+                document.getElementById('stats-area').style.display = 'flex';
+                
+                rcvStartTime = performance.now();
+                rcvLastUpdate = rcvStartTime;
+                rcvBytesSinceLastUpdate = 0;
             } 
             else if (data.type === 'chunk') {
                 receiveBuffer.push(data.data);
-                receivedSize += data.data.byteLength;
-                const percent = Math.round((receivedSize / incomingFileInfo.size) * 100);
-                updateProgress(percent, `Menerima file...`);
+                const chunkSize = data.data.byteLength;
+                receivedSize += chunkSize;
+                rcvBytesSinceLastUpdate += chunkSize;
+                
+                const now = performance.now();
+                const timeDiff = now - rcvLastUpdate;
+
+                if (timeDiff >= 250) {
+                    const percent = Math.round((receivedSize / incomingFileInfo.size) * 100);
+                    const speedBps = (rcvBytesSinceLastUpdate / (timeDiff / 1000));
+                    const etaSeconds = speedBps > 0 ? Math.ceil((incomingFileInfo.size - receivedSize) / speedBps) : 0;
+
+                    updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds));
+                    
+                    rcvLastUpdate = now;
+                    rcvBytesSinceLastUpdate = 0;
+                }
             } 
             else if (data.type === 'eof') {
+                updateStats(100, "Menyimpan...", "0s");
                 const blob = new Blob(receiveBuffer, { type: incomingFileInfo.mime });
                 downloadFile(blob, incomingFileInfo.name);
                 
-                // BUG FIX 1: Kosongkan Buffer RAM Segera Setelah Blob Dibuat
-                receiveBuffer = []; 
-                receivedSize = 0;
-
+                receiveBuffer = []; receivedSize = 0; // Kosongkan RAM
                 addToLog(`Diterima: ${incomingFileInfo.name}`);
-                playSuccessSound(); // Bunyikan suara Ting!
+                playSuccessSound();
+                releaseWakeLock(); // Lepas layar
                 
                 setTimeout(() => {
                     document.getElementById('progress-container').style.display = 'none';
-                    document.getElementById('progress-text').style.display = 'none';
+                    document.getElementById('stats-area').style.display = 'none';
                 }, 2000);
             }
         }
 
         // --- Utilities ---
-        function updateProgress(percent, text) {
+        function updateStats(percent, speed, eta) {
             document.getElementById('progress-bar').style.width = percent + '%';
-            document.getElementById('progress-text').innerText = `${text} (${percent}%)`;
+            document.getElementById('progress-text').innerText = `${percent}%`;
+            document.getElementById('speed-text').innerText = speed;
+            document.getElementById('eta-text').innerText = eta;
         }
 
         function resetUIAfterSend() {
             document.getElementById('progress-container').style.display = 'none';
-            document.getElementById('progress-text').style.display = 'none';
+            document.getElementById('stats-area').style.display = 'none';
             document.getElementById('progress-bar').style.width = '0%';
             fileInput.value = ""; fileInput.disabled = false;
             fileListDisplay.style.display = 'none'; filesQueue = [];
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Semua`;
+            sendBtn.disabled = true; sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Semua`;
         }
 
         function addToLog(message) {
@@ -379,20 +440,12 @@
             document.getElementById('transfer-log').prepend(li);
         }
 
-        // BUG FIX 3: Download Handling yang Lebih Stabil
         function downloadFile(blob, filename) {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.style.display = 'none'; 
-            a.href = url; 
-            a.download = filename;
-            document.body.appendChild(a); 
-            a.click();
-            // Memberi jeda kecil sebelum menghapus URL agar browser iOS sempat merespons
-            setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }, 1000);
+            a.style.display = 'none'; a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 1000);
         }
 
         function copyInviteLink() {
@@ -401,10 +454,18 @@
         }
 
         function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 B';
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatTime(seconds) {
+            if (seconds === Infinity || isNaN(seconds)) return "--:--";
+            if (seconds < 60) return `${seconds}s`;
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}m ${s}s`;
         }
 
         function showToast(msg) {
