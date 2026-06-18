@@ -1,7 +1,40 @@
-// --- 1. SERVICE WORKER & PWA REGISTRATION ---
+let newWorker;
+const updateBtn = document.getElementById('update-btn');
+
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
+    window.addEventListener('load', () => { 
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            // Deteksi jika ada pembaruan sw.js
+            reg.addEventListener('updatefound', () => {
+                newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    // Jika file baru sudah siap, tampilkan tombol update
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        if (updateBtn) updateBtn.style.display = 'block';
+                        showToast("Versi baru tersedia! Klik Update.");
+                    }
+                });
+            });
+        }).catch(err => console.error('Service Worker Error:', err));
+    });
+
+    // Otomatis refresh layar jika Service Worker baru sudah mengambil alih
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            window.location.reload();
+            refreshing = true;
+        }
+    });
 }
+
+// Perintah eksekusi dari tombol Update
+if (updateBtn) {
+    updateBtn.addEventListener('click', () => {
+        if (newWorker) newWorker.postMessage({ action: 'skipWaiting' });
+    });
+}
+
 let deferredPrompt;
 const installBtn = document.getElementById('install-btn');
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -30,19 +63,9 @@ themeBtn.addEventListener('click', () => {
 
 // --- 3. WAKE LOCK API ---
 let wakeLock = null;
-async function requestWakeLock() { 
-    try { 
-        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); 
-    } catch (err) {} 
-}
-function releaseWakeLock() { 
-    if (wakeLock !== null) { wakeLock.release().then(() => wakeLock = null); } 
-}
-document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible' && document.getElementById('progress-container').style.display === 'block') {
-        await requestWakeLock();
-    }
-});
+async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
+function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => wakeLock = null); } }
+document.addEventListener('visibilitychange', async () => { if (document.visibilityState === 'visible' && document.getElementById('progress-container').style.display === 'block') { await requestWakeLock(); } });
 
 // --- 4. PEERJS INITIALIZATION & NETWORKING ---
 let peer = null; let conn = null; let myIdStr = ""; let qrGenerated = false;
@@ -59,10 +82,7 @@ peer.on('error', (err) => {
     document.getElementById('my-id').innerHTML = '<span style="color:var(--danger); font-size:1.2rem;">Gagal Konek Server</span>';
     document.getElementById('status-wait').innerHTML = '<p style="color:var(--danger)">Server sibuk. Muat ulang.</p>'; showToast("Error: " + err.type);
 });
-peer.on('connection', (connection) => { 
-    conn = connection; 
-    conn.on('open', () => setupConnection()); 
-});
+peer.on('connection', (connection) => { conn = connection; conn.on('open', () => setupConnection()); });
 
 function connectToPeer(targetId) {
     conn = peer.connect(targetId);
@@ -84,31 +104,26 @@ function setupConnection() {
     document.getElementById('bottom-bar').style.display = 'flex';
     showToast("Berhasil Terhubung!"); window.history.replaceState({}, document.title, window.location.pathname);
     conn.on('data', handleIncomingData);
-    conn.on('close', () => {
-        releaseWakeLock(); 
-        showToast("Teman keluar."); setTimeout(() => location.reload(), 2000);
-    });
+    conn.on('close', () => { releaseWakeLock(); showToast("Teman keluar."); setTimeout(() => location.reload(), 2000); });
 }
 
 // --- 5. SINGLE PAGE APPLICATION (SPA) PAGES SWITCHER ---
 function switchPage(page) {
-    const fileArea = document.getElementById('transfer-area');
-    const chatArea = document.getElementById('chat-area');
-    const navFile = document.getElementById('nav-file');
-    const navChat = document.getElementById('nav-chat');
+    const pages = ['file', 'chat', 'game'];
+    pages.forEach(p => {
+        const area = document.getElementById(p === 'file' ? 'transfer-area' : p + '-area');
+        if (area) area.style.display = (p === page) ? 'block' : 'none';
+        
+        const navBtn = document.getElementById('nav-' + p);
+        if (navBtn) {
+            if (p === page) navBtn.classList.add('active');
+            else navBtn.classList.remove('active');
+        }
+    });
 
-    if (page === 'file') {
-        fileArea.style.display = 'block';
-        chatArea.style.display = 'none';
-        navFile.classList.add('active');
-        navChat.classList.remove('active');
-    } else if (page === 'chat') {
-        fileArea.style.display = 'none';
-        chatArea.style.display = 'block';
-        navChat.classList.add('active');
-        navFile.classList.remove('active');
+    if (page === 'chat') {
         const box = document.getElementById('chat-box');
-        box.scrollTop = box.scrollHeight;
+        if (box) box.scrollTop = box.scrollHeight;
     }
 }
 
@@ -125,14 +140,13 @@ function toggleQR() {
     }
 }
 
-// --- 6. INCOMING DATA HANDLER (FILE & TEXT CHAT) ---
+// --- 6. INCOMING DATA HANDLER ---
 let receiveBuffer = []; let receivedSize = 0; let incomingFileInfo = null;
 let rcvStartTime = 0; let rcvLastUpdate = 0; let rcvBytesSinceLastUpdate = 0;
 
 function handleIncomingData(data) {
     if (data.type === 'text') { 
-        addChatMessage('Teman', data.content, false); 
-        showToast("Pesan obrolan baru masuk!"); 
+        addChatMessage('Teman', data.content, false); showToast("Pesan obrolan baru masuk!"); 
     }
     else if (data.type === 'cancel') {
         receiveBuffer = []; receivedSize = 0;
@@ -159,6 +173,13 @@ function handleIncomingData(data) {
         downloadFile(blob, incomingFileInfo.name); receiveBuffer = []; receivedSize = 0; 
         addToLog(`Diterima: ${incomingFileInfo.name}`, true); releaseWakeLock();
         setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
+    }
+    else if (data.type === 'game_init') {
+        renderBoard(data.boardData);
+        showToast("Teman memulai game Onet!");
+    } 
+    else if (data.type === 'game_action') {
+        handlePeerAction(data.actionData);
     }
 }
 
@@ -290,3 +311,94 @@ document.getElementById('btn-send-chat').addEventListener('click', () => {
 document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter'){ document.getElementById('btn-send-chat').click(); }
 });
+
+// --- 10. LOGIKA GAME ONET ---
+let onetBoardData = [];
+let selectedIndex = null;
+let currentScore = 0;
+
+const icons = ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽']; 
+
+function startNewGame() {
+    if (!conn) { showToast("Belum terhubung dengan teman!"); return; }
+    
+    let deck = [...icons, ...icons];
+    
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    const newBoard = deck.map((icon, index) => ({
+        id: index,
+        icon: icon,
+        isCleared: false
+    }));
+
+    renderBoard(newBoard);
+    conn.send({ type: 'game_init', boardData: newBoard });
+}
+
+function renderBoard(boardData) {
+    onetBoardData = boardData;
+    selectedIndex = null;
+    currentScore = 0;
+    document.getElementById('game-score').innerText = `Skor: ${currentScore}`;
+    
+    const boardEl = document.getElementById('onet-board');
+    if(boardEl) {
+        boardEl.innerHTML = '';
+        boardData.forEach((tile, index) => {
+            const tileEl = document.createElement('div');
+            tileEl.className = `onet-tile ${tile.isCleared ? 'hidden' : ''}`;
+            tileEl.innerText = tile.icon;
+            tileEl.onclick = () => onTileClick(index);
+            tileEl.id = `tile-${index}`;
+            boardEl.appendChild(tileEl);
+        });
+    }
+}
+
+function onTileClick(index) {
+    if (onetBoardData[index].isCleared) return;
+    conn.send({ type: 'game_action', actionData: { index: index } });
+    processGameLogic(index);
+}
+
+function handlePeerAction(actionData) {
+    processGameLogic(actionData.index);
+}
+
+function processGameLogic(index) {
+    const tilesEl = document.querySelectorAll('.onet-tile');
+    
+    if (selectedIndex === null) {
+        selectedIndex = index;
+        tilesEl[index].classList.add('selected');
+        return;
+    }
+
+    if (selectedIndex === index) {
+        tilesEl[index].classList.remove('selected');
+        selectedIndex = null;
+        return;
+    }
+
+    const tile1 = onetBoardData[selectedIndex];
+    const tile2 = onetBoardData[index];
+
+    tilesEl[selectedIndex].classList.remove('selected');
+
+    if (tile1.icon === tile2.icon) {
+        tile1.isCleared = true;
+        tile2.isCleared = true;
+        
+        tilesEl[selectedIndex].classList.add('hidden');
+        tilesEl[index].classList.add('hidden');
+        
+        currentScore += 10;
+        document.getElementById('game-score').innerText = `Skor: ${currentScore}`;
+    }
+
+    selectedIndex = null;
+}

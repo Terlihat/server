@@ -8,7 +8,7 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="icon-192.png">
     
-    <title>SkyNet</title>
+    <title>SKYNET</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -21,8 +21,9 @@
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> Skynet</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> SKYNET v1.1</div>
         <div class="header-actions">
+			<button id="update-btn" style="display: none; background: var(--primary-dark); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; margin-right: 5px;"><i class="fa-solid fa-arrows-rotate"></i> Update App</button>
             <button id="install-btn"><i class="fa-solid fa-download"></i> Install App</button>
             <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
         </div>
@@ -90,16 +91,33 @@
                 </div>
             </div>
         </div>
+
+        <div class="card" id="game-area">
+            <div class="status-badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                <i class="fa-solid fa-gamepad"></i> Onet Multiplayer
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
+                <span id="game-score" style="font-weight: bold; color: var(--primary);">Skor: 0</span>
+                <button class="btn-primary" onclick="startNewGame()" style="padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; color: white;">
+                    <i class="fa-solid fa-rotate-right"></i> Mulai Baru
+                </button>
+            </div>
+
+            <div class="onet-board" id="onet-board">
+                </div>
+        </div>
     </div>
 
     <nav class="bottom-nav" id="bottom-bar">
         <div class="nav-item active" id="nav-file" onclick="switchPage('file')">
-            <i class="fa-solid fa-folder-open"></i>
-            <span>File</span>
+            <i class="fa-solid fa-folder-open"></i><span>File</span>
         </div>
         <div class="nav-item" id="nav-chat" onclick="switchPage('chat')">
-            <i class="fa-solid fa-comments"></i>
-            <span>Obrolan</span>
+            <i class="fa-solid fa-comments"></i><span>Obrolan</span>
+        </div>
+        <div class="nav-item" id="nav-game" onclick="switchPage('game')">
+            <i class="fa-solid fa-gamepad"></i><span>Game</span>
         </div>
     </nav>
 

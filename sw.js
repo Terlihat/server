@@ -1,4 +1,4 @@
-const CACHE_NAME = 'Skynet-v9.5';
+const CACHE_NAME = 'SKYNET-v1.1';
 const urlsToCache = [
   './',
   './index.html',
@@ -10,8 +10,13 @@ const urlsToCache = [
   './icon-512.png'
 ];
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('install', event => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
