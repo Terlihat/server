@@ -227,7 +227,10 @@
             document.getElementById('my-id').innerHTML = '<span style="color:var(--danger); font-size:1.2rem;">Gagal Konek Server</span>';
             document.getElementById('status-wait').innerHTML = '<p style="color:var(--danger)">Server sibuk. Muat ulang.</p>'; showToast("Error: " + err.type);
         });
-        peer.on('connection', (connection) => { conn = connection; setupConnection(); });
+        peer.on('connection', (connection) => { 
+		    conn = connection; 
+		    conn.on('open', () => setupConnection()); 
+		});
 
         function connectToPeer(targetId) {
             conn = peer.connect(targetId);
@@ -278,8 +281,16 @@
         const textInput = document.getElementById('text-input'); const sendTextBtn = document.getElementById('send-text-btn');
         sendTextBtn.addEventListener('click', () => {
             const text = textInput.value.trim();
-            if(text && conn && conn.open) { conn.send({ type: 'text', content: text }); addTextLog(`Anda: ${text}`, true); textInput.value = ""; }
-        });
+            if (!conn) {
+		        showToast("Belum ada koneksi!");
+		        return;
+		    }
+		    if (text) { 
+		        conn.send({ type: 'text', content: text }); 
+		        addTextLog(`Anda: ${text}`, true); 
+		        textInput.value = ""; 
+		    }
+		});
         textInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendTextBtn.click(); });
 
         function addTextLog(text, isSender) {
