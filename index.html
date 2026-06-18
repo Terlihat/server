@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebDrop P2P 3.0</title>
+    <title>WebDrop P2P 5.0 (Stable)</title>
     
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root {
             --bg-color: #f3f4f6; --text-color: #1f2937; --card-bg: #ffffff;
             --border-color: #e5e7eb; --primary: #3b82f6; --primary-dark: #2563eb;
-            --success: #10b981; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --success: #10b981; --danger: #ef4444; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
         [data-theme="dark"] {
@@ -39,29 +40,39 @@
 
         .id-display { background: var(--bg-color); padding: 1rem; border-radius: 12px; font-size: 1.8rem; font-weight: 700; letter-spacing: 3px; color: var(--primary); margin-bottom: 1rem; }
         
-        input[type="text"] { width: 100%; padding: 1rem; border-radius: 12px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 1.1rem; text-align: center; outline: none; margin-bottom: 1rem; }
-        input[type="text"]:focus { border-color: var(--primary); }
-
-        .btn { width: 100%; padding: 1rem; border-radius: 12px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 0.5rem; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 0.5rem; }
+        .btn { flex: 1; padding: 1rem; border-radius: 12px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn:active { transform: scale(0.98); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        /* QR Code Styling */
+        #qr-box { display: none; margin-top: 1.5rem; padding: 1.5rem; background: white; border-radius: 12px; border: 2px dashed var(--primary); }
+        #qrcode { display: flex; justify-content: center; margin-top: 10px; }
+
         #transfer-area { display: none; }
         .status-badge { display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .status-badge.disconnected { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
 
         .file-upload-wrapper { position: relative; margin-bottom: 1rem; }
         .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-        .file-upload-ui { border: 2px dashed var(--primary); padding: 2rem 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500; }
+        .file-upload-ui { border: 2px dashed var(--primary); padding: 2rem 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500; transition: 0.3s; }
+        .file-upload-ui:active { background: rgba(59, 130, 246, 0.15); }
         .file-upload-ui i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
 
-        .file-list { text-align: left; background: var(--bg-color); padding: 1rem; border-radius: 8px; font-size: 0.9rem; max-height: 150px; overflow-y: auto; margin-bottom: 1rem; display: none; }
-        .file-list li { margin-bottom: 5px; list-style-type: none; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        /* File List with Thumbnails */
+        .file-list { text-align: left; background: var(--bg-color); padding: 1rem; border-radius: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 1rem; display: none; }
+        .file-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        .file-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+        .file-thumb { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: var(--border-color); display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--primary); }
+        .file-info { flex-grow: 1; overflow: hidden; }
+        .file-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-size { font-size: 0.8rem; opacity: 0.7; }
 
         .progress-container { width: 100%; background: var(--border-color); border-radius: 10px; height: 12px; overflow: hidden; margin-top: 1rem; display: none; }
         .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
-        .progress-text { font-size: 0.9rem; margin-top: 8px; font-weight: 600; display: none; color: var(--primary); }
+        .progress-text { font-size: 0.9rem; margin-top: 8px; font-weight: 600; display: none; color: var(--primary); text-align: center; }
 
         .log-area { text-align: left; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
         .log-area h4 { font-size: 0.9rem; color: #6b7280; margin-bottom: 10px; }
@@ -76,7 +87,7 @@
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 3.0</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 5.0</div>
         <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
     </header>
 
@@ -84,32 +95,37 @@
         <div id="connection-area">
             <div class="card">
                 <h3>ID Perangkat Anda</h3>
-                <div class="id-display" id="my-id">...</div>
-                <button class="btn btn-primary" onclick="copyInviteLink()"><i class="fa-solid fa-share-nodes"></i> Salin Link Undangan</button>
-                <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.7;">Kirim link ini ke teman untuk otomatis terhubung</p>
-            </div>
+                <div class="id-display" id="my-id">Memuat...</div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="copyInviteLink()"><i class="fa-solid fa-link"></i> Salin Link</button>
+                    <button class="btn btn-outline" onclick="toggleQR()"><i class="fa-solid fa-qrcode"></i> QR Code</button>
+                </div>
 
-            <div class="card" style="margin-top: 1.2rem;">
-                <h3>Atau Masukkan ID Teman</h3>
-                <input type="text" id="peer-id-input" placeholder="Contoh: 4921">
-                <button class="btn btn-outline" id="connect-btn"><i class="fa-solid fa-link"></i> Hubungkan Manual</button>
+                <div id="qr-box">
+                    <p style="font-size: 0.9rem; color: #1f2937; margin-bottom: 5px;">Scan dengan kamera HP teman</p>
+                    <div id="qrcode"></div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 1.2rem; opacity: 0.8;">
+                <p style="font-size: 0.9rem;"><i class="fa-solid fa-spinner fa-spin"></i> Menunggu koneksi masuk...</p>
             </div>
         </div>
 
         <div class="card" id="transfer-area">
-            <div class="status-badge"><i class="fa-solid fa-shield-check"></i> Terhubung Aman (P2P)</div>
+            <div class="status-badge" id="status-badge"><i class="fa-solid fa-shield-check"></i> Terhubung Aman (P2P)</div>
             
             <div class="file-upload-wrapper">
                 <div class="file-upload-ui">
-                    <i class="fa-solid fa-folder-open"></i>
-                    <span>Ketuk untuk pilih beberapa file</span>
+                    <i class="fa-solid fa-images"></i>
+                    <span>Ketuk untuk pilih foto / file</span>
                 </div>
                 <input type="file" id="file-input" multiple>
             </div>
             
-            <ul class="file-list" id="file-list"></ul>
+            <div class="file-list" id="file-list"></div>
 
-            <button class="btn btn-primary" id="send-btn" disabled>
+            <button class="btn btn-primary" id="send-btn" disabled style="width: 100%;">
                 <i class="fa-solid fa-paper-plane"></i> Kirim Semua
             </button>
 
@@ -144,23 +160,39 @@
             themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
         });
 
-        // --- WebRTC Logic ---
-        let peer = null; let conn = null; let myIdStr = "";
+        // --- Fitur Audio (Sintesis Suara Ting!) ---
+        function playSuccessSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return; // Abaikan jika browser tidak support
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine'; // Suara bulat
+                osc.frequency.setValueAtTime(880, ctx.currentTime); // Nada A5
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+                osc.stop(ctx.currentTime + 0.4);
+            } catch (e) { console.warn("Audio failed", e); }
+        }
+
+        // --- WebRTC Logic & BUG FIXES ---
+        let peer = null; let conn = null; let myIdStr = ""; let qrGenerated = false;
         
-        // Cek apakah ada parameter ID di URL (Auto-Connect fitur)
         const urlParams = new URLSearchParams(window.location.search);
         const autoConnectId = urlParams.get('connect');
-
         const randomId = Math.floor(1000 + Math.random() * 9000).toString();
+        
         peer = new Peer(randomId, { debug: 1 });
 
         peer.on('open', (id) => {
             myIdStr = id;
             document.getElementById('my-id').innerText = id;
-            
-            // Jika ada link undangan, otomatis hubungkan!
             if(autoConnectId && autoConnectId !== id) {
-                showToast("Menghubungkan otomatis ke " + autoConnectId);
+                showToast("Menghubungkan otomatis...");
                 connectToPeer(autoConnectId);
             }
         });
@@ -168,11 +200,6 @@
         peer.on('connection', (connection) => {
             conn = connection;
             setupConnection();
-        });
-
-        document.getElementById('connect-btn').addEventListener('click', () => {
-            const targetId = document.getElementById('peer-id-input').value.trim();
-            if(targetId) connectToPeer(targetId);
         });
 
         function connectToPeer(targetId) {
@@ -185,28 +212,64 @@
             document.getElementById('connection-area').style.display = 'none';
             document.getElementById('transfer-area').style.display = 'block';
             showToast("Berhasil Terhubung!");
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
             conn.on('data', handleIncomingData);
             
-            // Bersihkan URL bar agar terlihat rapi
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // BUG FIX 2: Penanganan Jika Koneksi Terputus
+            conn.on('close', () => {
+                const badge = document.getElementById('status-badge');
+                badge.className = 'status-badge disconnected';
+                badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Koneksi Terputus!';
+                showToast("Teman Anda meninggalkan ruangan.");
+                setTimeout(() => location.reload(), 3000); // Muat ulang halaman setelah 3 detik
+            });
         }
 
-        // --- Multi-File Logic ---
-        let filesQueue = [];
-        let currentFileIndex = 0;
-        
+        // --- QR Code Generator ---
+        function toggleQR() {
+            const qrBox = document.getElementById('qr-box');
+            if (qrBox.style.display === 'block') {
+                qrBox.style.display = 'none';
+            } else {
+                qrBox.style.display = 'block';
+                if (!qrGenerated) {
+                    const inviteLink = window.location.origin + window.location.pathname + "?connect=" + myIdStr;
+                    new QRCode(document.getElementById("qrcode"), {
+                        text: inviteLink, width: 150, height: 150,
+                        colorDark : "#1f2937", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
+                    });
+                    qrGenerated = true;
+                }
+            }
+        }
+
+        // --- Multi-File & Thumbnail Logic ---
+        let filesQueue = []; let currentFileIndex = 0;
         const fileInput = document.getElementById('file-input');
         const fileListDisplay = document.getElementById('file-list');
         const sendBtn = document.getElementById('send-btn');
-        const transferLog = document.getElementById('transfer-log');
 
         fileInput.addEventListener('change', (e) => {
             filesQueue = Array.from(e.target.files);
             if (filesQueue.length > 0) {
                 fileListDisplay.style.display = 'block';
                 fileListDisplay.innerHTML = "";
+                
                 filesQueue.forEach(f => {
-                    fileListDisplay.innerHTML += `<li><i class="fa-regular fa-file"></i> ${f.name} (${formatBytes(f.size)})</li>`;
+                    let thumbHtml = `<div class="file-thumb"><i class="fa-solid fa-file"></i></div>`;
+                    if (f.type.startsWith('image/')) {
+                        const imgUrl = URL.createObjectURL(f);
+                        thumbHtml = `<img src="${imgUrl}" class="file-thumb">`;
+                    }
+                    fileListDisplay.innerHTML += `
+                        <div class="file-item">
+                            ${thumbHtml}
+                            <div class="file-info">
+                                <div class="file-name">${f.name}</div>
+                                <div class="file-size">${formatBytes(f.size)}</div>
+                            </div>
+                        </div>`;
                 });
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim ${filesQueue.length} File`;
@@ -215,15 +278,13 @@
 
         sendBtn.addEventListener('click', () => {
             if (filesQueue.length === 0) return;
-            sendBtn.disabled = true;
-            fileInput.disabled = true;
-            currentFileIndex = 0;
-            processNextFileInQueue();
+            sendBtn.disabled = true; fileInput.disabled = true;
+            currentFileIndex = 0; processNextFileInQueue();
         });
 
         function processNextFileInQueue() {
             if (currentFileIndex >= filesQueue.length) {
-                showToast("Semua file selesai dikirim!");
+                showToast("Semua file terkirim!");
                 resetUIAfterSend();
                 return;
             }
@@ -234,9 +295,7 @@
             document.getElementById('progress-container').style.display = 'block';
             document.getElementById('progress-text').style.display = 'block';
             
-            const CHUNK_SIZE = 256 * 1024; // 256 KB
-            let offset = 0;
-
+            const CHUNK_SIZE = 256 * 1024; let offset = 0;
             conn.send({ type: 'meta', name: file.name, size: file.size, mime: file.type });
 
             function readAndSendNextChunk() {
@@ -248,15 +307,14 @@
                     offset += e.target.result.byteLength;
                     
                     const percent = Math.round((offset / file.size) * 100);
-                    updateProgress(percent, `Mengirim (${currentFileIndex + 1}/${filesQueue.length}): ${file.name}`);
+                    updateProgress(percent, `Mengirim (${currentFileIndex + 1}/${filesQueue.length})...`);
 
-                    if (offset < file.size) {
-                        setTimeout(readAndSendNextChunk, 2); 
-                    } else {
+                    if (offset < file.size) { setTimeout(readAndSendNextChunk, 2); } 
+                    else {
                         conn.send({ type: 'eof' });
                         addToLog(`Terkirim: ${file.name}`);
                         currentFileIndex++;
-                        setTimeout(processNextFileInQueue, 500); // Lanjut ke file berikutnya
+                        setTimeout(processNextFileInQueue, 500);
                     }
                 };
                 reader.readAsArrayBuffer(slice);
@@ -264,15 +322,12 @@
             readAndSendNextChunk();
         }
 
-        // --- Penerimaan Data ---
-        let receiveBuffer = [];
-        let receivedSize = 0;
-        let incomingFileInfo = null;
+        // --- Penerimaan Data & Memory Management ---
+        let receiveBuffer = []; let receivedSize = 0; let incomingFileInfo = null;
 
         function handleIncomingData(data) {
             if (data.type === 'meta') {
-                incomingFileInfo = data;
-                receiveBuffer = []; receivedSize = 0;
+                incomingFileInfo = data; receiveBuffer = []; receivedSize = 0;
                 document.getElementById('progress-container').style.display = 'block';
                 document.getElementById('progress-text').style.display = 'block';
             } 
@@ -280,14 +335,19 @@
                 receiveBuffer.push(data.data);
                 receivedSize += data.data.byteLength;
                 const percent = Math.round((receivedSize / incomingFileInfo.size) * 100);
-                updateProgress(percent, `Menerima: ${incomingFileInfo.name}`);
+                updateProgress(percent, `Menerima file...`);
             } 
             else if (data.type === 'eof') {
                 const blob = new Blob(receiveBuffer, { type: incomingFileInfo.mime });
                 downloadFile(blob, incomingFileInfo.name);
-                addToLog(`Diterima: ${incomingFileInfo.name}`);
                 
-                // Reset progress UI jika penerimaan selesai
+                // BUG FIX 1: Kosongkan Buffer RAM Segera Setelah Blob Dibuat
+                receiveBuffer = []; 
+                receivedSize = 0;
+
+                addToLog(`Diterima: ${incomingFileInfo.name}`);
+                playSuccessSound(); // Bunyikan suara Ting!
+                
                 setTimeout(() => {
                     document.getElementById('progress-container').style.display = 'none';
                     document.getElementById('progress-text').style.display = 'none';
@@ -306,8 +366,7 @@
             document.getElementById('progress-text').style.display = 'none';
             document.getElementById('progress-bar').style.width = '0%';
             fileInput.value = ""; fileInput.disabled = false;
-            fileListDisplay.style.display = 'none';
-            filesQueue = [];
+            fileListDisplay.style.display = 'none'; filesQueue = [];
             sendBtn.disabled = true;
             sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Semua`;
         }
@@ -315,28 +374,30 @@
         function addToLog(message) {
             const emptyLog = document.getElementById('empty-log');
             if(emptyLog) emptyLog.remove();
-            
             const li = document.createElement('li');
             li.innerHTML = `<i class="fa-solid fa-check"></i> ${message}`;
-            transferLog.prepend(li);
+            document.getElementById('transfer-log').prepend(li);
         }
 
+        // BUG FIX 3: Download Handling yang Lebih Stabil
         function downloadFile(blob, filename) {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.style.display = 'none'; a.href = url; a.download = filename;
-            document.body.appendChild(a); a.click();
-            window.URL.revokeObjectURL(url);
+            a.style.display = 'none'; 
+            a.href = url; 
+            a.download = filename;
+            document.body.appendChild(a); 
+            a.click();
+            // Memberi jeda kecil sebelum menghapus URL agar browser iOS sempat merespons
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 1000);
         }
 
         function copyInviteLink() {
-            // Membuat link yang menyertakan parameter '?connect=ID'
-            const currentUrl = window.location.origin + window.location.pathname;
-            const inviteLink = `${currentUrl}?connect=${myIdStr}`;
-            
-            navigator.clipboard.writeText(inviteLink).then(() => {
-                showToast("Link Disalin! Kirim ke teman Anda.");
-            });
+            const inviteLink = window.location.origin + window.location.pathname + "?connect=" + myIdStr;
+            navigator.clipboard.writeText(inviteLink).then(() => showToast("Link Disalin!"));
         }
 
         function formatBytes(bytes) {
@@ -348,8 +409,7 @@
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('show');
+            toast.innerText = msg; toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
     </script>
