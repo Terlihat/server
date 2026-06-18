@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Local Server</title>
+    
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- CSS Variables untuk Tema Light/Dark --- */
+        :root {
+            --bg-color: #f3f4f6;
+            --text-color: #1f2937;
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --hover-bg: #f9fafb;
+            --primary-color: #3b82f6;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --text-color: #f9fafb;
+            --card-bg: #1f2937;
+            --border-color: #374151;
+            --hover-bg: #374151;
+            --primary-color: #60a5fa;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- Reset & Layout Dasar --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* --- Header & Tombol Tema --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .brand i {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+
+        #theme-toggle {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+        }
+
+        #theme-toggle:hover {
+            background: var(--hover-bg);
+            transform: translateY(-2px);
+        }
+
+        /* --- Tampilan List File --- */
+        .file-manager {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            text-decoration: none;
+            color: var(--text-color);
+            transition: background-color 0.2s;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+            width: 40px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .file-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .file-name {
+            font-weight: 500;
+            font-size: 1.05rem;
+        }
+
+        .file-meta {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            display: flex;
+            gap: 15px;
+        }
+
+        /* Warna Ikon Spesifik */
+        .icon-folder { color: #fbbf24; }
+        .icon-image { color: #10b981; }
+        .icon-video { color: #ef4444; }
+        .icon-archive { color: #8b5cf6; }
+        .icon-code { color: var(--primary-color); }
+        
+        @media (max-width: 600px) {
+            .file-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .file-icon { margin-right: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="brand">
+                <i class="fa-solid fa-server"></i>
+                <span>My Web Server</span>
+            </div>
+            <button id="theme-toggle">
+                <i class="fa-solid fa-moon"></i> Dark Mode
+            </button>
+        </header>
+
+        <div class="file-manager">
+            
+            <a href="#" class="file-item">
+                <div class="file-icon icon-folder"><i class="fa-solid fa-folder"></i></div>
+                <div class="file-info">
+                    <span class="file-name">Movies & Series</span>
+                    <span class="file-meta">Folder • Terakhir diubah: Hari ini</span>
+                </div>
+            </a>
+
+            <a href="#" class="file-item">
+                <div class="file-icon icon-image"><i class="fa-solid fa-image"></i></div>
+                <div class="file-info">
+                    <span class="file-name">Wallpaper_4K.png</span>
+                    <span class="file-meta">4.2 MB • Gambar</span>
+                </div>
+            </a>
+
+            <a href="#" class="file-item">
+                <div class="file-icon icon-video"><i class="fa-solid fa-circle-play"></i></div>
+                <div class="file-info">
+                    <span class="file-name">Tutorial_Coding.mp4</span>
+                    <span class="file-meta">156 MB • Video</span>
+                </div>
+            </a>
+
+            <a href="#" class="file-item">
+                <div class="file-icon icon-archive"><i class="fa-solid fa-file-zipper"></i></div>
+                <div class="file-info">
+                    <span class="file-name">Project_Backup.zip</span>
+                    <span class="file-meta">25 MB • ZIP Archive</span>
+                </div>
+            </a>
+
+             <a href="#" class="file-item">
+                <div class="file-icon icon-code"><i class="fa-solid fa-file-code"></i></div>
+                <div class="file-info">
+                    <span class="file-name">index.html</span>
+                    <span class="file-meta">8 KB • HTML Document</span>
+                </div>
+            </a>
+
+        </div>
+    </div>
+
+    <script>
+        const toggleBtn = document.getElementById('theme-toggle');
+        const rootElement = document.documentElement;
+        
+        // Cek preferensi tema yang tersimpan di LocalStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            rootElement.setAttribute('data-theme', savedTheme);
+            updateButtonUI(savedTheme);
+        }
+
+        // Event Listener untuk tombol ganti tema
+        toggleBtn.addEventListener('click', () => {
+            const currentTheme = rootElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            rootElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme); // Simpan pilihan user
+            updateButtonUI(newTheme);
+        });
+
+        // Fungsi untuk mengubah teks dan ikon pada tombol
+        function updateButtonUI(theme) {
+            if (theme === 'dark') {
+                toggleBtn.innerHTML = '<i class="fa-solid fa-sun"></i> Light Mode';
+            } else {
+                toggleBtn.innerHTML = '<i class="fa-solid fa-moon"></i> Dark Mode';
+            }
+        }
+    </script>
+</body>
+</html>
