@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebDrop P2P 6.0 (Pro)</title>
+    <title>WebDrop P2P 7.0 (Ultimate)</title>
     
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
         :root {
             --bg-color: #f3f4f6; --text-color: #1f2937; --card-bg: #ffffff;
             --border-color: #e5e7eb; --primary: #3b82f6; --primary-dark: #2563eb;
-            --success: #10b981; --danger: #ef4444; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
         [data-theme="dark"] {
@@ -44,6 +44,7 @@
         .btn { flex: 1; padding: 1rem; border-radius: 12px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-danger { background: var(--danger); color: white; display: none; }
         .btn:active { transform: scale(0.98); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -55,23 +56,24 @@
         .status-badge.disconnected { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
 
         .file-upload-wrapper { position: relative; margin-bottom: 1rem; }
-        .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-        .file-upload-ui { border: 2px dashed var(--primary); padding: 2rem 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500; transition: 0.3s; }
-        .file-upload-ui:active { background: rgba(59, 130, 246, 0.15); }
-        .file-upload-ui i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+        .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
+        
+        /* Drag & Drop UI */
+        .file-upload-ui { border: 2px dashed var(--primary); padding: 2.5rem 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.05); color: var(--primary); font-weight: 500; transition: 0.3s; position: relative; z-index: 1; }
+        .file-upload-ui.dragover { background: rgba(59, 130, 246, 0.2); border-color: var(--primary-dark); transform: scale(1.02); }
+        .file-upload-ui i { font-size: 2.5rem; margin-bottom: 10px; display: block; pointer-events: none; }
+        .file-upload-ui span { pointer-events: none; }
 
         .file-list { text-align: left; background: var(--bg-color); padding: 1rem; border-radius: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 1rem; display: none; }
         .file-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
         .file-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-        .file-thumb { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: var(--border-color); display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--primary); }
+        .file-thumb { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: var(--border-color); display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--primary); flex-shrink: 0; }
         .file-info { flex-grow: 1; overflow: hidden; }
         .file-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .file-size { font-size: 0.8rem; opacity: 0.7; }
 
         .progress-container { width: 100%; background: var(--border-color); border-radius: 10px; height: 12px; overflow: hidden; margin-top: 1rem; display: none; }
         .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
-        
-        /* Stats Area Baru (Kecepatan & ETA) */
         .stats-area { display: none; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; font-weight: 600; color: var(--primary); }
 
         .log-area { text-align: left; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
@@ -79,6 +81,7 @@
         .log-list { font-size: 0.85rem; list-style: none; }
         .log-list li { padding: 6px 0; display: flex; align-items: center; gap: 8px; }
         .log-list li i.fa-check { color: var(--success); }
+        .log-list li i.fa-xmark { color: var(--danger); }
 
         #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text-color); color: var(--bg-color); padding: 12px 24px; border-radius: 30px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; transition: 0.4s; opacity: 0; }
         #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -87,7 +90,7 @@
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 6.0</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> WebDrop 7.0</div>
         <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
     </header>
 
@@ -115,19 +118,24 @@
         <div class="card" id="transfer-area">
             <div class="status-badge" id="status-badge"><i class="fa-solid fa-shield-check"></i> Terhubung Aman (P2P)</div>
             
-            <div class="file-upload-wrapper">
-                <div class="file-upload-ui">
-                    <i class="fa-solid fa-images"></i>
-                    <span>Ketuk untuk pilih foto / file</span>
+            <div class="file-upload-wrapper" id="drop-zone">
+                <div class="file-upload-ui" id="drop-ui">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Ketuk atau Seret File ke Sini</span>
                 </div>
                 <input type="file" id="file-input" multiple>
             </div>
             
             <div class="file-list" id="file-list"></div>
 
-            <button class="btn btn-primary" id="send-btn" disabled style="width: 100%;">
-                <i class="fa-solid fa-paper-plane"></i> Kirim Semua
-            </button>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="send-btn" disabled>
+                    <i class="fa-solid fa-paper-plane"></i> Kirim Semua
+                </button>
+                <button class="btn btn-danger" id="cancel-btn">
+                    <i class="fa-solid fa-stop"></i> Batal
+                </button>
+            </div>
 
             <div class="progress-container" id="progress-container">
                 <div class="progress-bar" id="progress-bar"></div>
@@ -164,30 +172,18 @@
             themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
         });
 
-        // --- BUG FIX 1: Wake Lock API (Mencegah Layar Mati) ---
+        // --- Wake Lock API ---
         let wakeLock = null;
         async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Screen Wake Lock diaktifkan.');
-                }
-            } catch (err) { console.warn('Wake Lock gagal:', err); }
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
         }
-        function releaseWakeLock() {
-            if (wakeLock !== null) {
-                wakeLock.release().then(() => { wakeLock = null; console.log('Screen Wake Lock dilepas.'); });
-            }
-        }
+        function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => wakeLock = null); } }
 
-        // --- Fitur Audio ---
         function playSuccessSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                const ctx = new AudioContext();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (!ctx) return;
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
                 osc.connect(gain); gain.connect(ctx.destination);
                 osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
                 gain.gain.setValueAtTime(0.1, ctx.currentTime);
@@ -207,9 +203,7 @@
 
         peer.on('open', (id) => {
             myIdStr = id; document.getElementById('my-id').innerText = id;
-            if(autoConnectId && autoConnectId !== id) {
-                showToast("Menghubungkan otomatis..."); connectToPeer(autoConnectId);
-            }
+            if(autoConnectId && autoConnectId !== id) { showToast("Menghubungkan otomatis..."); connectToPeer(autoConnectId); }
         });
 
         peer.on('connection', (connection) => { conn = connection; setupConnection(); });
@@ -227,9 +221,8 @@
             window.history.replaceState({}, document.title, window.location.pathname);
             
             conn.on('data', handleIncomingData);
-            
             conn.on('close', () => {
-                releaseWakeLock(); // Lepas kunci layar jika teman keluar
+                releaseWakeLock();
                 const badge = document.getElementById('status-badge');
                 badge.className = 'status-badge disconnected';
                 badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Koneksi Terputus!';
@@ -238,7 +231,6 @@
             });
         }
 
-        // --- QR Code ---
         function toggleQR() {
             const qrBox = document.getElementById('qr-box');
             if (qrBox.style.display === 'block') { qrBox.style.display = 'none'; } 
@@ -246,22 +238,40 @@
                 qrBox.style.display = 'block';
                 if (!qrGenerated) {
                     const inviteLink = window.location.origin + window.location.pathname + "?connect=" + myIdStr;
-                    new QRCode(document.getElementById("qrcode"), {
-                        text: inviteLink, width: 150, height: 150, colorDark : "#1f2937", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
-                    });
+                    new QRCode(document.getElementById("qrcode"), { text: inviteLink, width: 150, height: 150, colorDark : "#1f2937", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
                     qrGenerated = true;
                 }
             }
         }
 
-        // --- File Input ---
-        let filesQueue = []; let currentFileIndex = 0;
+        // --- Drag & Drop & File Input ---
+        let filesQueue = []; let currentFileIndex = 0; let isCancelled = false;
         const fileInput = document.getElementById('file-input');
         const fileListDisplay = document.getElementById('file-list');
         const sendBtn = document.getElementById('send-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const dropZone = document.getElementById('drop-zone');
+        const dropUI = document.getElementById('drop-ui');
 
-        fileInput.addEventListener('change', (e) => {
-            filesQueue = Array.from(e.target.files);
+        // Event Listeners untuk Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+        
+        ['dragenter', 'dragover'].forEach(eventName => { dropZone.addEventListener(eventName, () => dropUI.classList.add('dragover'), false); });
+        ['dragleave', 'drop'].forEach(eventName => { dropZone.addEventListener(eventName, () => dropUI.classList.remove('dragover'), false); });
+
+        dropZone.addEventListener('drop', (e) => {
+            if(sendBtn.disabled && filesQueue.length > 0) return; // Cegah drop saat sedang mengirim
+            let dt = e.dataTransfer; let files = dt.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        function handleFiles(files) {
+            filesQueue = Array.from(files);
             if (filesQueue.length > 0) {
                 fileListDisplay.style.display = 'block'; fileListDisplay.innerHTML = "";
                 filesQueue.forEach(f => {
@@ -274,87 +284,77 @@
                 });
                 sendBtn.disabled = false; sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim ${filesQueue.length} File`;
             }
-        });
+        }
 
+        // --- Pengiriman File ---
         sendBtn.addEventListener('click', () => {
             if (filesQueue.length === 0) return;
-            sendBtn.disabled = true; fileInput.disabled = true;
-            currentFileIndex = 0; 
-            requestWakeLock(); // Aktifkan anti-tidur saat kirim file
-            processNextFileInQueue();
+            isCancelled = false;
+            sendBtn.style.display = 'none'; cancelBtn.style.display = 'block'; fileInput.disabled = true;
+            currentFileIndex = 0; requestWakeLock(); processNextFileInQueue();
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            isCancelled = true;
+            conn.send({ type: 'cancel' }); // Beritahu target
+            addToLog(`Dibatalkan oleh Anda.`, false);
+            showToast("Pengiriman dibatalkan.");
+            resetUIAfterSend();
+            releaseWakeLock();
         });
 
         function processNextFileInQueue() {
+            if (isCancelled) return;
             if (currentFileIndex >= filesQueue.length) {
-                showToast("Semua file terkirim!");
-                resetUIAfterSend();
-                releaseWakeLock(); // Lepas layar saat semua selesai
-                return;
+                showToast("Semua file terkirim!"); resetUIAfterSend(); releaseWakeLock(); return;
             }
             sendFile(filesQueue[currentFileIndex]);
         }
 
-        // --- Algoritma Pengiriman Baru (Backpressure & Speedometer) ---
         function sendFile(file) {
+            // BUG FIX 1: Tangani file 0 byte agar tidak NaN / Crash
+            if (file.size === 0) {
+                addToLog(`File kosong dilewati: ${file.name}`, false);
+                currentFileIndex++; setTimeout(processNextFileInQueue, 100); return;
+            }
+
             document.getElementById('progress-container').style.display = 'block';
             document.getElementById('stats-area').style.display = 'flex';
             
             const CHUNK_SIZE = 256 * 1024; let offset = 0;
             conn.send({ type: 'meta', name: file.name, size: file.size, mime: file.type });
 
-            // Variabel untuk menghitung Speed & ETA
-            let startTime = performance.now();
-            let lastUpdate = startTime;
-            let bytesSinceLastUpdate = 0;
+            let startTime = performance.now(); let lastUpdate = startTime; let bytesSinceLastUpdate = 0;
 
             function readAndSendNextChunk() {
-                // BUG FIX 2: Backpressure (Rem Otomatis jika Jaringan Penuh)
-                // Jika antrean WebRTC lebih dari 1 MB (1048576 bytes), tunggu sebentar
-                if (conn.dataChannel.bufferedAmount > 1048576) {
-                    setTimeout(readAndSendNextChunk, 10);
-                    return;
-                }
+                if (isCancelled) return; // Berhenti jika tombol Batal ditekan
+
+                if (conn.dataChannel.bufferedAmount > 1048576) { setTimeout(readAndSendNextChunk, 10); return; }
 
                 const slice = file.slice(offset, offset + CHUNK_SIZE);
                 const reader = new FileReader();
 
                 reader.onload = (e) => {
+                    if (isCancelled) return;
                     const chunkData = e.target.result;
                     conn.send({ type: 'chunk', data: chunkData });
                     
-                    offset += chunkData.byteLength;
-                    bytesSinceLastUpdate += chunkData.byteLength;
-                    
-                    const now = performance.now();
-                    const timeDiff = now - lastUpdate;
+                    offset += chunkData.byteLength; bytesSinceLastUpdate += chunkData.byteLength;
+                    const now = performance.now(); const timeDiff = now - lastUpdate;
 
-                    // Update UI setiap ~250ms agar tidak lag
                     if (timeDiff >= 250 || offset >= file.size) {
                         const percent = Math.round((offset / file.size) * 100);
-                        
-                        // Hitung Kecepatan (MB/s)
                         const speedBps = (bytesSinceLastUpdate / (timeDiff / 1000));
-                        const speedText = formatBytes(speedBps) + '/s';
-                        
-                        // Hitung ETA (Sisa Waktu)
-                        const bytesRemaining = file.size - offset;
-                        const etaSeconds = speedBps > 0 ? Math.ceil(bytesRemaining / speedBps) : 0;
-                        const etaText = formatTime(etaSeconds);
-
-                        updateStats(percent, speedText, etaText);
-                        
-                        lastUpdate = now;
-                        bytesSinceLastUpdate = 0;
+                        const etaSeconds = speedBps > 0 ? Math.ceil((file.size - offset) / speedBps) : 0;
+                        updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds));
+                        lastUpdate = now; bytesSinceLastUpdate = 0;
                     }
 
-                    if (offset < file.size) { 
-                        // Langsung hajar loop berikutnya jika buffer aman
-                        setTimeout(readAndSendNextChunk, 0); 
-                    } else {
+                    if (offset < file.size) { setTimeout(readAndSendNextChunk, 0); } 
+                    else {
                         conn.send({ type: 'eof' });
                         addToLog(`Terkirim: ${file.name}`);
-                        currentFileIndex++;
-                        setTimeout(processNextFileInQueue, 500);
+                        currentFileIndex++; setTimeout(processNextFileInQueue, 500);
                     }
                 };
                 reader.readAsArrayBuffer(slice);
@@ -362,52 +362,46 @@
             readAndSendNextChunk();
         }
 
-        // --- Penerimaan Data & Stats ---
+        // --- Penerimaan Data ---
         let receiveBuffer = []; let receivedSize = 0; let incomingFileInfo = null;
         let rcvStartTime = 0; let rcvLastUpdate = 0; let rcvBytesSinceLastUpdate = 0;
 
         function handleIncomingData(data) {
-            if (data.type === 'meta') {
+            if (data.type === 'cancel') {
+                receiveBuffer = []; receivedSize = 0;
+                document.getElementById('progress-container').style.display = 'none';
+                document.getElementById('stats-area').style.display = 'none';
+                addToLog(`Pengiriman dibatalkan oleh pengirim.`, false);
+                showToast("Pengirim membatalkan transfer.");
+                releaseWakeLock();
+            }
+            else if (data.type === 'meta') {
                 incomingFileInfo = data; receiveBuffer = []; receivedSize = 0;
-                requestWakeLock(); // Aktifkan anti-tidur saat menerima file
-                
+                requestWakeLock();
                 document.getElementById('progress-container').style.display = 'block';
                 document.getElementById('stats-area').style.display = 'flex';
-                
-                rcvStartTime = performance.now();
-                rcvLastUpdate = rcvStartTime;
-                rcvBytesSinceLastUpdate = 0;
+                rcvStartTime = performance.now(); rcvLastUpdate = rcvStartTime; rcvBytesSinceLastUpdate = 0;
             } 
             else if (data.type === 'chunk') {
                 receiveBuffer.push(data.data);
-                const chunkSize = data.data.byteLength;
-                receivedSize += chunkSize;
-                rcvBytesSinceLastUpdate += chunkSize;
-                
-                const now = performance.now();
-                const timeDiff = now - rcvLastUpdate;
+                const chunkSize = data.data.byteLength; receivedSize += chunkSize; rcvBytesSinceLastUpdate += chunkSize;
+                const now = performance.now(); const timeDiff = now - rcvLastUpdate;
 
                 if (timeDiff >= 250) {
                     const percent = Math.round((receivedSize / incomingFileInfo.size) * 100);
                     const speedBps = (rcvBytesSinceLastUpdate / (timeDiff / 1000));
                     const etaSeconds = speedBps > 0 ? Math.ceil((incomingFileInfo.size - receivedSize) / speedBps) : 0;
-
                     updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds));
-                    
-                    rcvLastUpdate = now;
-                    rcvBytesSinceLastUpdate = 0;
+                    rcvLastUpdate = now; rcvBytesSinceLastUpdate = 0;
                 }
             } 
             else if (data.type === 'eof') {
                 updateStats(100, "Menyimpan...", "0s");
                 const blob = new Blob(receiveBuffer, { type: incomingFileInfo.mime });
                 downloadFile(blob, incomingFileInfo.name);
-                
-                receiveBuffer = []; receivedSize = 0; // Kosongkan RAM
+                receiveBuffer = []; receivedSize = 0; 
                 addToLog(`Diterima: ${incomingFileInfo.name}`);
-                playSuccessSound();
-                releaseWakeLock(); // Lepas layar
-                
+                playSuccessSound(); releaseWakeLock();
                 setTimeout(() => {
                     document.getElementById('progress-container').style.display = 'none';
                     document.getElementById('stats-area').style.display = 'none';
@@ -429,14 +423,17 @@
             document.getElementById('progress-bar').style.width = '0%';
             fileInput.value = ""; fileInput.disabled = false;
             fileListDisplay.style.display = 'none'; filesQueue = [];
-            sendBtn.disabled = true; sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Semua`;
+            sendBtn.style.display = 'block'; sendBtn.disabled = true;
+            cancelBtn.style.display = 'none';
+            sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Semua`;
         }
 
-        function addToLog(message) {
+        function addToLog(message, isSuccess = true) {
             const emptyLog = document.getElementById('empty-log');
             if(emptyLog) emptyLog.remove();
             const li = document.createElement('li');
-            li.innerHTML = `<i class="fa-solid fa-check"></i> ${message}`;
+            const icon = isSuccess ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-xmark"></i>';
+            li.innerHTML = `${icon} ${message}`;
             document.getElementById('transfer-log').prepend(li);
         }
 
@@ -463,9 +460,7 @@
         function formatTime(seconds) {
             if (seconds === Infinity || isNaN(seconds)) return "--:--";
             if (seconds < 60) return `${seconds}s`;
-            const m = Math.floor(seconds / 60);
-            const s = seconds % 60;
-            return `${m}m ${s}s`;
+            const m = Math.floor(seconds / 60); const s = seconds % 60; return `${m}m ${s}s`;
         }
 
         function showToast(msg) {
