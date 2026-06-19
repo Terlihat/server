@@ -70,7 +70,12 @@ const urlParams = new URLSearchParams(window.location.search);
 const autoConnectId = urlParams.get('connect');
 const randomId = Math.floor(1000 + Math.random() * 9000).toString();
 
-peer = new Peer(randomId, { debug: 1 });
+peer = new Peer(randomId, {
+    host: 'peerjs.com', // Mengarahkan langsung ke domain utama mereka yang sering kali lebih stabil
+    secure: true,
+    port: 443,
+    debug: 1
+});
 peer.on('open', (id) => {
     myIdStr = id; document.getElementById('my-id').innerText = id;
     if(autoConnectId && autoConnectId !== id) { showToast("Menghubungkan..."); connectToPeer(autoConnectId); }
