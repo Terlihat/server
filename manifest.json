@@ -1,6 +1,6 @@
 {
-  "name": "Skynet",
-  "short_name": "Skynet",
+  "name": "SKYNET",
+  "short_name": "SKYNET",
   "description": "Aplikasi transfer file P2P super cepat secara lokal.",
   "start_url": "./index.html",
   "display": "standalone",
