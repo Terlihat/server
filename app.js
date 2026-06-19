@@ -1,14 +1,13 @@
+// --- 1. PWA & UPDATE LOGIC ---
 let newWorker;
 const updateBtn = document.getElementById('update-btn');
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => { 
         navigator.serviceWorker.register('./sw.js').then(reg => {
-            // Deteksi jika ada pembaruan sw.js
             reg.addEventListener('updatefound', () => {
                 newWorker = reg.installing;
                 newWorker.addEventListener('statechange', () => {
-                    // Jika file baru sudah siap, tampilkan tombol update
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         if (updateBtn) updateBtn.style.display = 'block';
                         showToast("Versi baru tersedia! Klik Update.");
@@ -18,7 +17,6 @@ if ('serviceWorker' in navigator) {
         }).catch(err => console.error('Service Worker Error:', err));
     });
 
-    // Otomatis refresh layar jika Service Worker baru sudah mengambil alih
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
@@ -28,7 +26,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Perintah eksekusi dari tombol Update
 if (updateBtn) {
     updateBtn.addEventListener('click', () => {
         if (newWorker) newWorker.postMessage({ action: 'skipWaiting' });
@@ -49,7 +46,7 @@ installBtn.addEventListener('click', async () => {
     }
 });
 
-// --- 2. DARK/LIGHT THEME CONTROLLER ---
+// --- 2. THEME CONTROLLER ---
 const root = document.documentElement;
 const themeBtn = document.getElementById('theme-toggle');
 const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -61,13 +58,13 @@ themeBtn.addEventListener('click', () => {
     themeBtn.innerHTML = newTheme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
 });
 
-// --- 3. WAKE LOCK API ---
+// --- 3. WAKE LOCK ---
 let wakeLock = null;
 async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
 function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => wakeLock = null); } }
 document.addEventListener('visibilitychange', async () => { if (document.visibilityState === 'visible' && document.getElementById('progress-container').style.display === 'block') { await requestWakeLock(); } });
 
-// --- 4. PEERJS INITIALIZATION & NETWORKING ---
+// --- 4. PEERJS ---
 let peer = null; let conn = null; let myIdStr = ""; let qrGenerated = false;
 const urlParams = new URLSearchParams(window.location.search);
 const autoConnectId = urlParams.get('connect');
@@ -107,20 +104,17 @@ function setupConnection() {
     conn.on('close', () => { releaseWakeLock(); showToast("Teman keluar."); setTimeout(() => location.reload(), 2000); });
 }
 
-// --- 5. SINGLE PAGE APPLICATION (SPA) PAGES SWITCHER ---
 function switchPage(page) {
     const pages = ['file', 'chat', 'game'];
     pages.forEach(p => {
         const area = document.getElementById(p === 'file' ? 'transfer-area' : p + '-area');
         if (area) area.style.display = (p === page) ? 'block' : 'none';
-        
         const navBtn = document.getElementById('nav-' + p);
         if (navBtn) {
             if (p === page) navBtn.classList.add('active');
             else navBtn.classList.remove('active');
         }
     });
-
     if (page === 'chat') {
         const box = document.getElementById('chat-box');
         if (box) box.scrollTop = box.scrollHeight;
@@ -140,7 +134,7 @@ function toggleQR() {
     }
 }
 
-// --- 6. INCOMING DATA HANDLER ---
+// --- 5. INCOMING DATA ---
 let receiveBuffer = []; let receivedSize = 0; let incomingFileInfo = null;
 let rcvStartTime = 0; let rcvLastUpdate = 0; let rcvBytesSinceLastUpdate = 0;
 
@@ -175,18 +169,20 @@ function handleIncomingData(data) {
         setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
     }
     else if (data.type === 'game_init') {
+        myScore = 0; peerScore = 0;
+        myCombo = 0; peerCombo = 0;
         renderBoard(data.boardData);
         showToast("Teman memulai game Onet!");
     } 
     else if (data.type === 'game_action') {
         handlePeerAction(data.actionData);
     }
-	else if (data.type === 'game_powerup') {
+    else if (data.type === 'game_powerup') {
         handlePeerPowerUp(data.actionData);
     }
 }
 
-// --- 7. OUTGOING FILE TRANSMISSION ---
+// --- 6. FILE TRANSFER ---
 let filesQueue = []; let currentFileIndex = 0; let isCancelled = false; let activeObjectUrls = [];
 const fileInput = document.getElementById('file-input'); const fileListDisplay = document.getElementById('file-list');
 const sendBtn = document.getElementById('send-btn'); const cancelBtn = document.getElementById('cancel-btn');
@@ -266,7 +262,6 @@ function sendFile(file) {
     readAndSendNextChunk();
 }
 
-// --- 8. HELPER & UTILITY FUNCTIONS ---
 function updateStats(percent, speed, eta) { document.getElementById('progress-bar').style.width = percent + '%'; document.getElementById('progress-text').innerText = `${percent}%`; document.getElementById('speed-text').innerText = speed; document.getElementById('eta-text').innerText = eta; }
 function resetUIAfterSend() { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; document.getElementById('progress-bar').style.width = '0%'; fileInput.value = ""; fileInput.disabled = false; fileListDisplay.style.display = 'none'; filesQueue = []; sendBtn.style.display = 'block'; sendBtn.disabled = true; cancelBtn.style.display = 'none'; sendBtn.innerHTML = `<i class="fa-solid fa-file-export"></i> Kirim Semua`; }
 function addToLog(message, isSuccess = true) { const emptyLog = document.getElementById('empty-log'); if(emptyLog) emptyLog.remove(); const li = document.createElement('li'); li.innerHTML = `${isSuccess ? '<i class="fa-solid fa-check" style="color:var(--success)"></i>' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i>'} <span style="flex-grow:1;">${message}</span>`; document.getElementById('transfer-log').prepend(li); }
@@ -276,7 +271,7 @@ function formatBytes(bytes) { if (bytes === 0) return '0 B'; const k = 1024, siz
 function formatTime(seconds) { if (seconds === Infinity || isNaN(seconds)) return "--:--"; if (seconds < 60) return `${seconds}s`; const m = Math.floor(seconds / 60); const s = seconds % 60; return `${m}m ${s}s`; }
 function showToast(msg) { const toast = document.getElementById('toast'); toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
 
-// --- 9. CHAT SYSTEM LOGIC ---
+// --- 7. CHAT LOGIC ---
 function addChatMessage(sender, text, isMe){
     const chatBox = document.getElementById('chat-box');
     if (!chatBox) return;
@@ -315,21 +310,31 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter'){ document.getElementById('btn-send-chat').click(); }
 });
 
-// --- 10. LOGIKA GAME ONET (TAHAP 2: CHAOS UPDATE) ---
+// --- 8. GAME ONET 2.0 (THE CORE + CHAOS UPDATE) ---
 let onetBoardData = [];
 let selectedIndex = null;
-let myScore = 0;
-let peerScore = 0;
+
+const THEMES = {
+    buah: ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽','🥥','🍍','🍋','🍒','🥝','🍅','🍆','🥔','🍔','🍕'],
+    hewan: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦆'],
+    tech: ['💻','📱','⌚','⌨️','🖱️','🖨️','📷','📺','📻','🔋','🔌','💡','🕹️','📡','💾','💿','💽','🎧']
+};
+
+let myScore = 0; let peerScore = 0;
+let myCombo = 0; let myLastMatchTime = 0;
+let peerCombo = 0; let peerLastMatchTime = 0;
 let myPowerUps = { shuffle: 1, hint: 1, freeze: 1 };
 let isFrozen = false;
 
 const COLS = 6; const ROWS = 6;
-const icons = ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽','🥥','🍍','🍋','🍒','🥝','🍅','🍆','🥔','🍔','🍕']; 
 
 function startNewGame() {
     if (!conn) { showToast("Belum terhubung dengan teman!"); return; }
     
-    let deck = [...icons, ...icons];
+    const themeKey = document.getElementById('theme-select').value;
+    const currentIcons = THEMES[themeKey];
+    
+    let deck = [...currentIcons, ...currentIcons];
     for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -337,9 +342,10 @@ function startNewGame() {
 
     const newBoard = deck.map((icon, index) => ({ id: index, icon: icon, isCleared: false }));
     
-    // Reset Power-Ups setiap mulai baru
     myPowerUps = { shuffle: 1, hint: 1, freeze: 1 };
     updatePowerUpUI();
+    myScore = 0; peerScore = 0;
+    myCombo = 0; peerCombo = 0;
 
     renderBoard(newBoard);
     conn.send({ type: 'game_init', boardData: newBoard });
@@ -348,7 +354,6 @@ function startNewGame() {
 function renderBoard(boardData) {
     onetBoardData = boardData;
     selectedIndex = null;
-    myScore = 0; peerScore = 0;
     updateScoreUI();
     
     const boardEl = document.getElementById('onet-board');
@@ -375,6 +380,22 @@ function updatePowerUpUI() {
     document.getElementById('btn-shuffle').innerHTML = `<i class="fa-solid fa-shuffle"></i> Acak (${myPowerUps.shuffle})`;
     document.getElementById('btn-hint').innerHTML = `<i class="fa-solid fa-lightbulb"></i> Petunjuk (${myPowerUps.hint})`;
     document.getElementById('btn-freeze').innerHTML = `<i class="fa-solid fa-snowflake"></i> Bekukan (${myPowerUps.freeze})`;
+}
+
+let comboTimeout;
+function showComboText(player, combo, color) {
+    const comboEl = document.getElementById('combo-text');
+    if (!comboEl) return;
+    clearTimeout(comboTimeout);
+    
+    if (combo > 1) {
+        comboEl.innerHTML = `<span class="combo-anim" style="color: ${color};">${player} COMBO x${combo}! 🔥</span>`;
+        if ('vibrate' in navigator) navigator.vibrate([50, 50]); 
+    } else {
+        comboEl.innerHTML = "";
+    }
+    
+    comboTimeout = setTimeout(() => { comboEl.innerHTML = ""; }, 2000);
 }
 
 function onTileClick(index) {
@@ -417,10 +438,25 @@ function processGameLogic(index, isFromPeer) {
         setTimeout(() => {
             tilesEl[idx1].classList.add('hidden');
             tilesEl[idx2].classList.add('hidden');
-            applyGravity(); // Panggil gravitasi setelah balok hancur
+            applyGravity(); 
         }, 300);
         
-        if (isFromPeer) peerScore += 10; else myScore += 10;
+        const now = Date.now();
+        let comboMulti = 1;
+        
+        if (isFromPeer) {
+            if (now - peerLastMatchTime < 4000) peerCombo++; else peerCombo = 1;
+            peerLastMatchTime = now;
+            comboMulti = peerCombo;
+            peerScore += (10 * comboMulti); 
+            showComboText('Teman', comboMulti, 'var(--danger)');
+        } else {
+            if (now - myLastMatchTime < 4000) myCombo++; else myCombo = 1;
+            myLastMatchTime = now;
+            comboMulti = myCombo;
+            myScore += (10 * comboMulti);
+            showComboText('Anda', comboMulti, 'var(--primary)');
+        }
         updateScoreUI();
     } else {
         if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]);
@@ -429,7 +465,6 @@ function processGameLogic(index, isFromPeer) {
     }
 }
 
-// --- SISTEM GRAVITASI ---
 function applyGravity() {
     let changed = false;
     for (let x = 0; x < COLS; x++) {
@@ -447,13 +482,10 @@ function applyGravity() {
         }
     }
     if (changed) {
-        setTimeout(() => {
-            renderBoard(onetBoardData); // Gambar ulang papan dengan posisi baru
-        }, 100); 
+        setTimeout(() => { renderBoard(onetBoardData); }, 100); 
     }
 }
 
-// --- SISTEM POWER-UPS ---
 function usePowerUp(type) {
     if (myPowerUps[type] <= 0 || isFrozen) return;
     myPowerUps[type]--;
@@ -474,7 +506,6 @@ function doShuffle() {
     let remainingIcons = [];
     onetBoardData.forEach(t => { if (!t.isCleared) remainingIcons.push(t.icon); });
     remainingIcons.sort(() => Math.random() - 0.5);
-    
     let iconIdx = 0;
     onetBoardData.forEach(t => { if (!t.isCleared) t.icon = remainingIcons[iconIdx++]; });
     renderBoard(onetBoardData);
@@ -491,10 +522,7 @@ function doHint() {
                     const t2 = document.getElementById(`tile-${j}`);
                     if(t1) t1.classList.add('hint-glow');
                     if(t2) t2.classList.add('hint-glow');
-                    setTimeout(() => {
-                        if(t1) t1.classList.remove('hint-glow');
-                        if(t2) t2.classList.remove('hint-glow');
-                    }, 2000);
+                    setTimeout(() => { if(t1) t1.classList.remove('hint-glow'); if(t2) t2.classList.remove('hint-glow'); }, 2000);
                     return;
                 }
             }
@@ -513,16 +541,14 @@ function handlePeerPowerUp(actionData) {
         showToast("LAYAR ANDA DIBEKUKAN TEMAN!");
         document.getElementById('onet-board').classList.add('frozen-board');
         if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-        
         setTimeout(() => {
             isFrozen = false;
             document.getElementById('onet-board').classList.remove('frozen-board');
             showToast("Bebas dari kebekuan! Balas dendam!");
-        }, 3000); // Beku selama 3 detik
+        }, 3000); 
     }
 }
 
-// --- ALGORITMA PATHFINDING 3 GARIS ---
 function getGrid() {
     let grid = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(0));
     for(let i=0; i<onetBoardData.length; i++) {

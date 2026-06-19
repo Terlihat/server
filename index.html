@@ -8,11 +8,10 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="icon-192.png">
     
-    <title>SKYNET</title>
+    <title>SkyNet</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="style.css">
     
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -21,9 +20,9 @@
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> SKYNET v1.1</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> Skynet</div>
         <div class="header-actions">
-			<button id="update-btn" style="display: none; background: var(--primary-dark); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; margin-right: 5px;"><i class="fa-solid fa-arrows-rotate"></i> Update App</button>
+            <button id="update-btn" style="display: none; background: var(--primary-dark); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; margin-right: 5px;"><i class="fa-solid fa-arrows-rotate"></i> Update App</button>
             <button id="install-btn"><i class="fa-solid fa-download"></i> Install App</button>
             <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
         </div>
@@ -34,7 +33,6 @@
             <div class="card">
                 <h3>ID Perangkat Anda</h3>
                 <div class="id-display" id="my-id">Memuat... <i class="fa-solid fa-circle-notch fa-spin"></i></div>
-                
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="copyInviteLink()"><i class="fa-solid fa-link"></i> Salin Link</button>
                     <button class="btn btn-outline" onclick="toggleQR()"><i class="fa-solid fa-qrcode"></i> QR Code</button>
@@ -56,26 +54,21 @@
 
         <div class="card" id="transfer-area">
             <div class="status-badge"><i class="fa-solid fa-file-shield"></i> Mode Transfer Berkas</div>
-            
             <div class="file-upload-wrapper" id="drop-zone">
                 <div class="file-upload-ui" id="drop-ui">
                     <i class="fa-solid fa-cloud-arrow-up"></i><span>Ketuk atau Seret File ke Sini</span>
                 </div>
                 <input type="file" id="file-input" multiple>
             </div>
-            
             <div class="file-list" id="file-list"></div>
-
             <div class="btn-group">
                 <button class="btn btn-primary" id="send-btn" disabled><i class="fa-solid fa-file-export"></i> Kirim File</button>
                 <button class="btn btn-danger" id="cancel-btn"><i class="fa-solid fa-stop"></i> Batal</button>
             </div>
-
             <div class="progress-container" id="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
             <div class="stats-area" id="stats-area">
                 <span id="progress-text">0%</span><span id="speed-text">0 MB/s</span><span id="eta-text">--:--</span>
             </div>
-
             <div class="log-area">
                 <h4>Riwayat Berkas Sesi Ini:</h4>
                 <ul class="log-list" id="transfer-log"><li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada berkas terkirim/diterima.</li></ul>
@@ -98,10 +91,20 @@
             </div>
             
             <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
-                <span id="game-score" style="font-weight: bold; color: var(--primary);">Skor: 0</span>
-                <button class="btn-primary" onclick="startNewGame()" style="padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; color: white;">
-                    <i class="fa-solid fa-rotate-right"></i> Mulai Baru
-                </button>
+                <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                    <span id="game-score" style="font-weight: bold; color: var(--primary);">Skor: 0</span>
+                    <span id="combo-text" style="color: #f59e0b; font-weight: 800; font-size: 0.9rem; height: 1.2rem; margin-top: 4px;"></span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <select id="theme-select" class="text-input" style="padding: 6px; width: auto; border-radius: 8px;">
+                        <option value="buah">🍎 Buah</option>
+                        <option value="hewan">🐶 Hewan</option>
+                        <option value="tech">💻 Tech</option>
+                    </select>
+                    <button class="btn-primary" onclick="startNewGame()" style="padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; color: white;">
+                        <i class="fa-solid fa-play"></i> Mulai
+                    </button>
+                </div>
             </div>
 
             <div id="power-ups-area" style="display: flex; gap: 8px; margin-bottom: 1rem; justify-content: center;">
@@ -109,6 +112,7 @@
                 <button class="btn-outline" onclick="usePowerUp('hint')" id="btn-hint" style="flex:1; padding: 6px; font-size: 0.8rem;"><i class="fa-solid fa-lightbulb"></i> Petunjuk (1)</button>
                 <button class="btn-outline" onclick="usePowerUp('freeze')" id="btn-freeze" style="flex:1; padding: 6px; font-size: 0.8rem;"><i class="fa-solid fa-snowflake"></i> Bekukan (1)</button>
             </div>
+
             <div class="onet-board" id="onet-board"></div>
         </div>
     </div>
@@ -126,7 +130,6 @@
     </nav>
 
     <div id="toast">Notifikasi</div>
-
     <script src="app.js"></script>
 </body>
 </html>

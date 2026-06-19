@@ -1,4 +1,5 @@
-const CACHE_NAME = 'SKYNET-v1.2';
+// Ganti angka versi ini setiap ada pembaruan kode agar pengguna mendapat Update
+const CACHE_NAME = 'SKYNET-v1.3';
 const urlsToCache = [
   './',
   './index.html',
@@ -12,7 +13,7 @@ const urlsToCache = [
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.action === 'skipWaiting') {
-    self.skipWaiting();
+    self.skipWaiting(); // Memaksa service worker baru untuk langsung mengambil alih
   }
 });
 

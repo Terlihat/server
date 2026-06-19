@@ -84,44 +84,18 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
 /* GAME ONET STYLES */
-.onet-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: var(--bg-color); padding: 10px; border-radius: 12px; border: 1px solid var(--border-color); min-height: 300px; }
-.onet-tile { background: var(--card-bg); border: 2px solid var(--border-color); border-radius: 8px; height: 60px; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; cursor: pointer; transition: 0.2s; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.onet-board { display: grid; gap: 8px; background: var(--bg-color); padding: 10px; border-radius: 12px; border: 1px solid var(--border-color); min-height: 300px; }
+.score-container { display: flex; gap: 15px; font-weight: 700; font-size: 1.1rem; }
+.score-me { color: var(--primary); }
+.score-peer { color: var(--danger); }
+.onet-tile { background: var(--card-bg); border: 2px solid var(--border-color); border-radius: 8px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 1.6rem; cursor: pointer; transition: all 0.3s ease; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .onet-tile:active { transform: scale(0.9); }
 .onet-tile.selected { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.1); transform: scale(1.05); }
 .onet-tile.hidden { visibility: hidden; }
 
-/* --- EFEK VISUAL ONET 2.0 --- */
-.score-container { display: flex; gap: 15px; font-weight: 700; font-size: 1.1rem; }
-.score-me { color: var(--primary); }
-.score-peer { color: var(--danger); }
-
-/* Balok sedikit diperkecil untuk menyesuaikan papan 6x6 */
-.onet-tile { height: 50px; font-size: 1.6rem; transition: all 0.3s ease; }
-
-/* Efek saat Anda yang mencetak poin (Biru) */
-.tile-match-me {
-    border-color: var(--primary) !important;
-    background: rgba(59, 130, 246, 0.3) !important;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
-    transform: scale(1.15) !important;
-    z-index: 10;
-}
-
-/* Efek saat Teman yang mencetak poin (Merah) */
-.tile-match-peer {
-    border-color: var(--danger) !important;
-    background: rgba(239, 68, 68, 0.3) !important;
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
-    transform: scale(1.15) !important;
-    z-index: 10;
-}
-
-/* Efek jika garis terhalang atau balok tidak sama (Goyang) */
-.onet-tile.error {
-    border-color: var(--danger) !important;
-    background: rgba(239, 68, 68, 0.1) !important;
-    animation: shake 0.3s;
-}
+.tile-match-me { border-color: var(--primary) !important; background: rgba(59, 130, 246, 0.3) !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); transform: scale(1.15) !important; z-index: 10; }
+.tile-match-peer { border-color: var(--danger) !important; background: rgba(239, 68, 68, 0.3) !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); transform: scale(1.15) !important; z-index: 10; }
+.onet-tile.error { border-color: var(--danger) !important; background: rgba(239, 68, 68, 0.1) !important; animation: shake 0.3s; }
 
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
@@ -129,21 +103,17 @@ header { display: flex; justify-content: space-between; align-items: center; pad
     75% { transform: translateX(5px) rotate(5deg); }
 }
 
-/* --- EFEK POWER-UP & GRAVITASI (TAHAP 2) --- */
-.frozen-board {
-    pointer-events: none;
-    filter: grayscale(0.8) hue-rotate(180deg) brightness(0.8);
-    transition: 0.5s;
-    animation: shake 0.5s infinite alternate;
-}
-.hint-glow {
-    animation: pulse-glow 0.8s infinite alternate !important;
-    border-color: #eab308 !important;
-    background: rgba(234, 179, 8, 0.3) !important;
-    box-shadow: 0 0 15px #eab308 !important;
-    z-index: 20;
-}
+.frozen-board { pointer-events: none; filter: grayscale(0.8) hue-rotate(180deg) brightness(0.8); transition: 0.5s; animation: shake 0.5s infinite alternate; }
+.hint-glow { animation: pulse-glow 0.8s infinite alternate !important; border-color: #eab308 !important; background: rgba(234, 179, 8, 0.3) !important; box-shadow: 0 0 15px #eab308 !important; z-index: 20; }
+
 @keyframes pulse-glow {
     from { transform: scale(1); }
     to { transform: scale(1.15); }
+}
+
+.combo-anim { animation: pop-combo 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; display: inline-block; }
+@keyframes pop-combo {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(1.1); opacity: 1; }
 }
