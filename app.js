@@ -310,13 +310,14 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter'){ document.getElementById('btn-send-chat').click(); }
 });
 
-// --- 8. GAME ONET 2.0 (THE CORE + CHAOS UPDATE) ---
+// --- 8. GAME ONET 2.0 (THE CORE + CHAOS UPDATE + COMBO + ROCKS) ---
 let onetBoardData = [];
 let selectedIndex = null;
 
+// Mengganti Babi (🐷) dengan Kuda (🐴)
 const THEMES = {
     buah: ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽','🥥','🍍','🍋','🍒','🥝','🍅','🍆','🥔','🍔','🍕'],
-    hewan: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🦆'],
+    hewan: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐴','🐸','🐵','🐔','🐧','🦆'],
     tech: ['💻','📱','⌚','⌨️','🖱️','🖨️','📷','📺','📻','🔋','🔌','💡','🕹️','📡','💾','💿','💽','🎧']
 };
 
@@ -334,13 +335,27 @@ function startNewGame() {
     const themeKey = document.getElementById('theme-select').value;
     const currentIcons = THEMES[themeKey];
     
-    let deck = [...currentIcons, ...currentIcons];
-    for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
+    const rockCount = 4;
+    const pairCount = ((COLS * ROWS) - rockCount) / 2; 
+    
+    let selectedIcons = [];
+    for(let i = 0; i < pairCount; i++) {
+        selectedIcons.push(currentIcons[i % currentIcons.length]);
     }
+    
+    let deck = [...selectedIcons, ...selectedIcons];
+    for(let i = 0; i < rockCount; i++) {
+        deck.push('🪨'); 
+    }
+    
+    deck.sort(() => Math.random() - 0.5);
 
-    const newBoard = deck.map((icon, index) => ({ id: index, icon: icon, isCleared: false }));
+    const newBoard = deck.map((icon, index) => ({ 
+        id: index, 
+        icon: icon, 
+        isCleared: false,
+        isRock: icon === '🪨'
+    }));
     
     myPowerUps = { shuffle: 1, hint: 1, freeze: 1 };
     updatePowerUpUI();
@@ -363,6 +378,7 @@ function renderBoard(boardData) {
         boardData.forEach((tile, index) => {
             const tileEl = document.createElement('div');
             tileEl.className = `onet-tile ${tile.isCleared ? 'hidden' : ''}`;
+            if (tile.isRock) tileEl.classList.add('rock-tile');
             tileEl.innerText = tile.icon;
             tileEl.onclick = () => onTileClick(index);
             tileEl.id = `tile-${index}`;
@@ -400,7 +416,7 @@ function showComboText(player, combo, color) {
 
 function onTileClick(index) {
     if (isFrozen) { showToast("Tubuh Anda membeku! Tidak bisa bergerak!"); return; }
-    if (onetBoardData[index].isCleared) return;
+    if (onetBoardData[index].isCleared || onetBoardData[index].isRock) return;
     conn.send({ type: 'game_action', actionData: { index: index } });
     processGameLogic(index, false); 
 }
@@ -429,8 +445,13 @@ function processGameLogic(index, isFromPeer) {
     tilesEl[idx1].classList.remove('selected');
     selectedIndex = null; 
 
-    if (tile1.icon === tile2.icon && checkOnetPath(idx1, idx2)) {
+    const pathPoints = checkOnetPath(idx1, idx2);
+
+    if (tile1.icon === tile2.icon && pathPoints) {
         tile1.isCleared = true; tile2.isCleared = true;
+        
+        drawPath(pathPoints, isFromPeer);
+
         const matchClass = isFromPeer ? 'tile-match-peer' : 'tile-match-me';
         tilesEl[idx1].classList.add(matchClass); tilesEl[idx2].classList.add(matchClass);
         if ('vibrate' in navigator) navigator.vibrate(100);
@@ -439,7 +460,7 @@ function processGameLogic(index, isFromPeer) {
             tilesEl[idx1].classList.add('hidden');
             tilesEl[idx2].classList.add('hidden');
             applyGravity(); 
-        }, 300);
+        }, 400); 
         
         const now = Date.now();
         let comboMulti = 1;
@@ -476,7 +497,7 @@ function applyGravity() {
             } else if (emptySpots > 0) {
                 let targetIdx = (y + emptySpots) * COLS + x;
                 onetBoardData[targetIdx] = onetBoardData[idx];
-                onetBoardData[idx] = { id: -1, icon: '', isCleared: true };
+                onetBoardData[idx] = { id: -1, icon: '', isCleared: true, isRock: false };
                 changed = true;
             }
         }
@@ -504,19 +525,19 @@ function usePowerUp(type) {
 
 function doShuffle() {
     let remainingIcons = [];
-    onetBoardData.forEach(t => { if (!t.isCleared) remainingIcons.push(t.icon); });
+    onetBoardData.forEach(t => { if (!t.isCleared && !t.isRock) remainingIcons.push(t.icon); });
     remainingIcons.sort(() => Math.random() - 0.5);
     let iconIdx = 0;
-    onetBoardData.forEach(t => { if (!t.isCleared) t.icon = remainingIcons[iconIdx++]; });
+    onetBoardData.forEach(t => { if (!t.isCleared && !t.isRock) t.icon = remainingIcons[iconIdx++]; });
     renderBoard(onetBoardData);
     showToast("Papan diacak!");
 }
 
 function doHint() {
     for(let i=0; i<onetBoardData.length; i++) {
-        if(onetBoardData[i].isCleared) continue;
+        if(onetBoardData[i].isCleared || onetBoardData[i].isRock) continue;
         for(let j=i+1; j<onetBoardData.length; j++) {
-            if(!onetBoardData[j].isCleared && onetBoardData[i].icon === onetBoardData[j].icon) {
+            if(!onetBoardData[j].isCleared && !onetBoardData[j].isRock && onetBoardData[i].icon === onetBoardData[j].icon) {
                 if(checkOnetPath(i, j)) {
                     const t1 = document.getElementById(`tile-${i}`);
                     const t2 = document.getElementById(`tile-${j}`);
@@ -552,7 +573,9 @@ function handlePeerPowerUp(actionData) {
 function getGrid() {
     let grid = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(0));
     for(let i=0; i<onetBoardData.length; i++) {
-        if(!onetBoardData[i].isCleared) grid[Math.floor(i / COLS) + 1][(i % COLS) + 1] = 1;
+        if(!onetBoardData[i].isCleared || onetBoardData[i].isRock) {
+            grid[Math.floor(i / COLS) + 1][(i % COLS) + 1] = 1;
+        }
     }
     return grid;
 }
@@ -575,19 +598,59 @@ function checkOnetPath(idx1, idx2) {
     let grid = getGrid();
     grid[y1][x1] = 0; grid[y2][x2] = 0;
 
-    if (x1 === x2 || y1 === y2) if (checkLine(x1, y1, x2, y2, grid)) return true; 
-    if (grid[y1][x2] === 0 && checkLine(x1, y1, x2, y1, grid) && checkLine(x2, y1, x2, y2, grid)) return true;
-    if (grid[y2][x1] === 0 && checkLine(x1, y1, x1, y2, grid) && checkLine(x1, y2, x2, y2, grid)) return true;
-
+    if (x1 === x2 || y1 === y2) {
+        if (checkLine(x1, y1, x2, y2, grid)) return [{x: x1, y: y1}, {x: x2, y: y2}];
+    }
+    if (grid[y1][x2] === 0 && checkLine(x1, y1, x2, y1, grid) && checkLine(x2, y1, x2, y2, grid)) {
+        return [{x: x1, y: y1}, {x: x2, y: y1}, {x: x2, y: y2}];
+    }
+    if (grid[y2][x1] === 0 && checkLine(x1, y1, x1, y2, grid) && checkLine(x1, y2, x2, y2, grid)) {
+        return [{x: x1, y: y1}, {x: x1, y: y2}, {x: x2, y: y2}];
+    }
     for (let x = 0; x < COLS + 2; x++) {
         if (grid[y1][x] === 0 && checkLine(x1, y1, x, y1, grid)) {
-            if (grid[y2][x] === 0 && checkLine(x, y1, x, y2, grid) && checkLine(x, y2, x2, y2, grid)) return true;
+            if (grid[y2][x] === 0 && checkLine(x, y1, x, y2, grid) && checkLine(x, y2, x2, y2, grid)) {
+                return [{x: x1, y: y1}, {x: x, y: y1}, {x: x, y: y2}, {x: x2, y: y2}];
+            }
         }
     }
     for (let y = 0; y < ROWS + 2; y++) {
         if (grid[y][x1] === 0 && checkLine(x1, y1, x1, y, grid)) {
-            if (grid[y][x2] === 0 && checkLine(x1, y, x2, y, grid) && checkLine(x2, y, x2, y2, grid)) return true;
+            if (grid[y][x2] === 0 && checkLine(x1, y, x2, y, grid) && checkLine(x2, y, x2, y2, grid)) {
+                return [{x: x1, y: y1}, {x: x1, y: y}, {x: x2, y: y}, {x: x2, y: y2}];
+            }
         }
     }
-    return false;
+    return null; 
+}
+
+function drawPath(points, isPeer) {
+    const svg = document.getElementById('path-svg');
+    const boardRect = document.getElementById('onet-board').getBoundingClientRect();
+    if (!svg || !boardRect) return;
+
+    const gap = 8; const padding = 10;
+    const tileW = (boardRect.width - (padding * 2) - ((COLS - 1) * gap)) / COLS;
+    const tileH = 50; 
+
+    let polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    let pointsStr = "";
+    
+    points.forEach(p => {
+        const cx = padding + (p.x - 1) * (tileW + gap) + (tileW / 2);
+        const cy = padding + (p.y - 1) * (tileH + gap) + (tileH / 2);
+        pointsStr += `${cx},${cy} `;
+    });
+    
+    polyline.setAttribute('points', pointsStr.trim());
+    polyline.setAttribute('fill', 'none');
+    polyline.setAttribute('stroke', isPeer ? 'var(--danger)' : 'var(--primary)');
+    polyline.setAttribute('stroke-width', '5');
+    polyline.setAttribute('stroke-linecap', 'round');
+    polyline.setAttribute('stroke-linejoin', 'round');
+    polyline.setAttribute('class', 'path-line');
+    
+    svg.appendChild(polyline);
+    
+    setTimeout(() => { svg.innerHTML = ''; }, 400);
 }
