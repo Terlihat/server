@@ -145,21 +145,47 @@ function handleIncomingData(data) {
     else if (data.type === 'cancel') {
         receiveBuffer = []; receivedSize = 0;
         document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none';
+        document.getElementById('file-list').style.display = 'none';
         addToLog(`Dibatalkan pengirim.`, false); showToast("Pengirim membatalkan."); releaseWakeLock();
     }
+    // --- FITUR BARU: Menggambar daftar file yang masuk ---
+    else if (data.type === 'queue_meta') {
+        const fileListDisplay = document.getElementById('file-list');
+        fileListDisplay.style.display = 'block';
+        fileListDisplay.innerHTML = `<div style="font-size:0.85rem; font-weight:bold; margin-bottom:10px; color:var(--primary);"><i class="fa-solid fa-cloud-arrow-down"></i> Menerima ${data.files.length} File:</div>`;
+        data.files.forEach(f => {
+            const nameDiv = document.createElement('div'); nameDiv.className = 'file-name'; nameDiv.textContent = f.name;
+            // Tampilan ikon file penerima berwarna hijau/berbeda sedikit
+            fileListDisplay.innerHTML += `<div class="file-item"><div class="file-thumb" style="background:rgba(16, 185, 129, 0.1); color:var(--success)"><i class="fa-solid fa-file-arrow-down"></i></div><div class="file-info">${nameDiv.outerHTML}<div class="file-size">${formatBytes(f.size)}</div></div></div>`;
+        });
+        switchPage('file');
+    }
+    else if (data.type === 'queue_done') {
+        // Menyembunyikan daftar file 2 detik setelah file terakhir selesai
+        setTimeout(() => { document.getElementById('file-list').style.display = 'none'; }, 2000);
+    }
+    // -----------------------------------------------------
     else if (data.type === 'meta') {
         incomingFileInfo = data; receiveBuffer = []; receivedSize = 0; requestWakeLock();
         switchPage('file'); 
         document.getElementById('progress-container').style.display = 'block'; document.getElementById('stats-area').style.display = 'flex';
+        
+        // Paksa UI untuk langsung menampilkan status 0%
+        updateStats(0, "Mulai mengunduh...", "--:--"); 
+        
         rcvStartTime = performance.now(); rcvLastUpdate = rcvStartTime; rcvBytesSinceLastUpdate = 0;
     } 
     else if (data.type === 'chunk') {
         receiveBuffer.push(data.data); receivedSize += data.data.byteLength; rcvBytesSinceLastUpdate += data.data.byteLength;
         const now = performance.now(); const timeDiff = now - rcvLastUpdate;
-        if (timeDiff >= 250) {
-            const percent = Math.round((receivedSize / incomingFileInfo.size) * 100); const speedBps = (rcvBytesSinceLastUpdate / (timeDiff / 1000));
+        
+        // Perbaikan: Update UI jika jeda > 250ms ATAU jika ini adalah cuplikan data terakhir (selesai)
+        if (timeDiff >= 250 || receivedSize === incomingFileInfo.size) {
+            const percent = Math.round((receivedSize / incomingFileInfo.size) * 100); 
+            const speedBps = (rcvBytesSinceLastUpdate / (timeDiff / 1000 || 0.001)); // Mencegah pembagian 0
             const etaSeconds = speedBps > 0 ? Math.ceil((incomingFileInfo.size - receivedSize) / speedBps) : 0;
-            updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds)); rcvLastUpdate = now; rcvBytesSinceLastUpdate = 0;
+            updateStats(percent, formatBytes(speedBps) + '/s', formatTime(etaSeconds)); 
+            rcvLastUpdate = now; rcvBytesSinceLastUpdate = 0;
         }
     } 
     else if (data.type === 'eof') {
@@ -169,10 +195,8 @@ function handleIncomingData(data) {
         setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
     }
     else if (data.type === 'game_init') {
-        myScore = 0; peerScore = 0;
-        myCombo = 0; peerCombo = 0;
-        renderBoard(data.boardData);
-        showToast("Teman memulai game Onet!");
+        myScore = 0; peerScore = 0; myCombo = 0; peerCombo = 0;
+        renderBoard(data.boardData); showToast("Teman memulai game Onet!");
     } 
     else if (data.type === 'game_action') {
         handlePeerAction(data.actionData);
@@ -219,6 +243,10 @@ function handleFiles(files) {
 sendBtn.addEventListener('click', () => {
     if (filesQueue.length === 0) return;
     isCancelled = false; sendBtn.style.display = 'none'; cancelBtn.style.display = 'block'; fileInput.disabled = true;
+	
+	const queueInfo = filesQueue.map(f => ({ name: f.name, size: f.size }));
+    conn.send({ type: 'queue_meta', files: queueInfo });
+	
     currentFileIndex = 0; requestWakeLock(); processNextFileInQueue();
 });
 cancelBtn.addEventListener('click', () => {
@@ -228,7 +256,13 @@ cancelBtn.addEventListener('click', () => {
 
 function processNextFileInQueue() {
     if (isCancelled) return;
-    if (currentFileIndex >= filesQueue.length) { showToast("Selesai!"); resetUIAfterSend(); releaseWakeLock(); return; }
+    if (currentFileIndex >= filesQueue.length) { 
+        showToast("Selesai!"); 
+        conn.send({ type: 'queue_done' }); // Memberitahu teman bahwa semua antrean selesai
+        resetUIAfterSend(); 
+        releaseWakeLock(); 
+        return; 
+    }
     sendFile(filesQueue[currentFileIndex]);
 }
 
