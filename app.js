@@ -348,9 +348,8 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
 let onetBoardData = [];
 let selectedIndex = null;
 
-// Mengganti Babi (🐷) dengan Kuda (🐴)
 const THEMES = {
-    buah: ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽','🥥','🍍','🍋','🍒','🥝','🍅','🍆','🥔','🍔','🍕'],
+    buah: ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽','🥥','🍍','🍋','🍒','\uD83E\uDD5D','🍅','🍆','🥔','🍔','🍕'],
     hewan: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐴','🐸','🐵','🐔','🐧','🦆'],
     tech: ['💻','📱','⌚','⌨️','🖱️','🖨️','📷','📺','📻','🔋','🔌','💡','🕹️','📡','💾','💿','💽','🎧']
 };
@@ -479,6 +478,7 @@ function processGameLogic(index, isFromPeer) {
     tilesEl[idx1].classList.remove('selected');
     selectedIndex = null; 
 
+    // --- Pengecekan Lintasan Algoritma Segala Arah ---
     const pathPoints = checkOnetPath(idx1, idx2);
 
     if (tile1.icon === tile2.icon && pathPoints) {
@@ -604,16 +604,19 @@ function handlePeerPowerUp(actionData) {
     }
 }
 
+// --- LOGIKA ONET PINTAR: GENERATOR MATRIX ---
 function getGrid() {
+    // Membuat grid dengan padding +2 agar garis bisa memutar lewat luar papan
     let grid = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(0));
     for(let i=0; i<onetBoardData.length; i++) {
         if(!onetBoardData[i].isCleared || onetBoardData[i].isRock) {
-            grid[Math.floor(i / COLS) + 1][(i % COLS) + 1] = 1;
+            grid[Math.floor(i / COLS) + 1][(i % COLS) + 1] = 1; // 1 berarti rintangan (Batu / Ikon)
         }
     }
     return grid;
 }
 
+// --- LOGIKA ONET PINTAR: PENGECEKAN GARIS LURUS ---
 function checkLine(x1, y1, x2, y2, grid) {
     if (x1 === x2) {
         for (let y = Math.min(y1, y2) + 1; y < Math.max(y1, y2); y++) if (grid[y][x1] !== 0) return false;
@@ -626,21 +629,28 @@ function checkLine(x1, y1, x2, y2, grid) {
     return false;
 }
 
+// --- LOGIKA ONET PINTAR: PENCARIAN JALUR (0, 1, ATAU 2 BELOKAN) ---
 function checkOnetPath(idx1, idx2) {
     let x1 = (idx1 % COLS) + 1, y1 = Math.floor(idx1 / COLS) + 1;
     let x2 = (idx2 % COLS) + 1, y2 = Math.floor(idx2 / COLS) + 1;
     let grid = getGrid();
-    grid[y1][x1] = 0; grid[y2][x2] = 0;
+    
+    grid[y1][x1] = 0; grid[y2][x2] = 0; // Bebaskan posisi start dan end sementara
 
+    // Jalur 0 Belokan (Lurus)
     if (x1 === x2 || y1 === y2) {
         if (checkLine(x1, y1, x2, y2, grid)) return [{x: x1, y: y1}, {x: x2, y: y2}];
     }
+    
+    // Jalur 1 Belokan (Bentuk L)
     if (grid[y1][x2] === 0 && checkLine(x1, y1, x2, y1, grid) && checkLine(x2, y1, x2, y2, grid)) {
         return [{x: x1, y: y1}, {x: x2, y: y1}, {x: x2, y: y2}];
     }
     if (grid[y2][x1] === 0 && checkLine(x1, y1, x1, y2, grid) && checkLine(x1, y2, x2, y2, grid)) {
         return [{x: x1, y: y1}, {x: x1, y: y2}, {x: x2, y: y2}];
     }
+    
+    // Jalur 2 Belokan (Bentuk U atau Z - Horizontal dan Luar Papan)
     for (let x = 0; x < COLS + 2; x++) {
         if (grid[y1][x] === 0 && checkLine(x1, y1, x, y1, grid)) {
             if (grid[y2][x] === 0 && checkLine(x, y1, x, y2, grid) && checkLine(x, y2, x2, y2, grid)) {
@@ -648,6 +658,8 @@ function checkOnetPath(idx1, idx2) {
             }
         }
     }
+    
+    // Jalur 2 Belokan (Bentuk U atau Z - Vertikal dan Luar Papan)
     for (let y = 0; y < ROWS + 2; y++) {
         if (grid[y][x1] === 0 && checkLine(x1, y1, x1, y, grid)) {
             if (grid[y][x2] === 0 && checkLine(x1, y, x2, y, grid) && checkLine(x2, y, x2, y2, grid)) {
