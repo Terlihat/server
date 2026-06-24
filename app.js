@@ -344,12 +344,12 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter'){ document.getElementById('btn-send-chat').click(); }
 });
 
-// --- 8. GAME ONET 2.0 (THE CORE + CHAOS UPDATE + COMBO + ROCKS) ---
+// --- 8. GAME ONET 3.0 (ENDLESS CANDY CRUSH + PORTAL + TIMER UPDATE) ---
 let onetBoardData = [];
 let selectedIndex = null;
 
 const THEMES = {
-    buah: ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽','🥥','🍍','🍋','🍒','\uD83E\uDD5D','🍅','🍆','🥔','🍔','🍕'],
+    buah: ['🍎','🍌','🍇','🍉','🍓','🥑','🥕','🌽','🥥','🍍','🍋','🍒','🥝','🍅','🍆','🥔','🍔','🍕'],
     hewan: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐴','🐸','🐵','🐔','🐧','🦆'],
     tech: ['💻','📱','⌚','⌨️','🖱️','🖨️','📷','📺','📻','🔋','🔌','💡','🕹️','📡','💾','💿','💽','🎧']
 };
@@ -359,6 +359,11 @@ let myCombo = 0; let myLastMatchTime = 0;
 let peerCombo = 0; let peerLastMatchTime = 0;
 let myPowerUps = { shuffle: 1, hint: 1, freeze: 1 };
 let isFrozen = false;
+
+// --- SISTEM WAKTU ---
+let timeLeft = 300; // 5 Menit = 300 detik
+let timerInterval = null;
+let isGameOver = false;
 
 const COLS = 6; const ROWS = 6;
 
@@ -380,7 +385,6 @@ function startNewGame() {
     for(let i = 0; i < rockCount; i++) {
         deck.push('🪨'); 
     }
-    
     deck.sort(() => Math.random() - 0.5);
 
     const newBoard = deck.map((icon, index) => ({ 
@@ -391,15 +395,30 @@ function startNewGame() {
     }));
     
     myPowerUps = { shuffle: 1, hint: 1, freeze: 1 };
-    updatePowerUpUI();
     myScore = 0; peerScore = 0;
     myCombo = 0; peerCombo = 0;
+    isGameOver = false;
+    isFrozen = false;
+    updatePowerUpUI();
+
+    // Reset & Mulai Timer
+    clearInterval(timerInterval);
+    timeLeft = 300; 
+    timerInterval = setInterval(() => {
+        if(isGameOver) return;
+        timeLeft--;
+        updateScoreUI(); // Update UI Waktu
+        if(timeLeft <= 0) {
+            triggerGameOver();
+        }
+    }, 1000);
 
     renderBoard(newBoard);
     conn.send({ type: 'game_init', boardData: newBoard });
 }
 
 function renderBoard(boardData) {
+    if(isGameOver) return;
     onetBoardData = boardData;
     selectedIndex = null;
     updateScoreUI();
@@ -422,13 +441,30 @@ function renderBoard(boardData) {
 
 function updateScoreUI() {
     const scoreEl = document.getElementById('game-score');
-    if(scoreEl) scoreEl.innerHTML = `<div class="score-container"><span class="score-me">Anda: ${myScore}</span> <span style="color:var(--text-color); opacity:0.5;">|</span> <span class="score-peer">Teman: ${peerScore}</span></div>`;
+    const min = Math.floor(timeLeft / 60);
+    const sec = timeLeft % 60;
+    const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+
+    if(scoreEl) {
+        scoreEl.innerHTML = `
+            <div style="font-weight:900; font-size:1.2rem; color:var(--danger); margin-bottom:8px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                ⏳ WAKTU: ${timeStr}
+            </div>
+            <div class="score-container">
+                <span class="score-me">Anda: ${myScore}</span> 
+                <span style="color:var(--text-color); opacity:0.5;">|</span> 
+                <span class="score-peer">Teman: ${peerScore}</span>
+            </div>
+        `;
+    }
 }
 
-function updatePowerUpUI() {
-    document.getElementById('btn-shuffle').innerHTML = `<i class="fa-solid fa-shuffle"></i> Acak (${myPowerUps.shuffle})`;
-    document.getElementById('btn-hint').innerHTML = `<i class="fa-solid fa-lightbulb"></i> Petunjuk (${myPowerUps.hint})`;
-    document.getElementById('btn-freeze').innerHTML = `<i class="fa-solid fa-snowflake"></i> Bekukan (${myPowerUps.freeze})`;
+function triggerGameOver() {
+    isGameOver = true;
+    clearInterval(timerInterval);
+    let message = myScore > peerScore ? "🎉 ANDA MENANG!" : (peerScore > myScore ? "💀 ANDA KALAH!" : "🤝 SERI!");
+    showToast(`WAKTU HABIS! ${message}`);
+    document.getElementById('onet-board').classList.add('frozen-board');
 }
 
 let comboTimeout;
@@ -436,37 +472,33 @@ function showComboText(player, combo, color) {
     const comboEl = document.getElementById('combo-text');
     if (!comboEl) return;
     clearTimeout(comboTimeout);
-    
     if (combo > 1) {
         comboEl.innerHTML = `<span class="combo-anim" style="color: ${color};">${player} COMBO x${combo}! 🔥</span>`;
         if ('vibrate' in navigator) navigator.vibrate([50, 50]); 
     } else {
         comboEl.innerHTML = "";
     }
-    
     comboTimeout = setTimeout(() => { comboEl.innerHTML = ""; }, 2000);
 }
 
 function onTileClick(index) {
-    if (isFrozen) { showToast("Tubuh Anda membeku! Tidak bisa bergerak!"); return; }
+    if (isGameOver || isFrozen) { showToast("Tidak bisa bergerak!"); return; }
     if (onetBoardData[index].isCleared || onetBoardData[index].isRock) return;
     conn.send({ type: 'game_action', actionData: { index: index } });
     processGameLogic(index, false); 
 }
 
 function handlePeerAction(actionData) {
-    processGameLogic(actionData.index, true); 
+    if(!isGameOver) processGameLogic(actionData.index, true); 
 }
 
 function processGameLogic(index, isFromPeer) {
     const tilesEl = document.querySelectorAll('.onet-tile');
-    
     if (selectedIndex === null) {
         selectedIndex = index;
         tilesEl[index].classList.add('selected');
         return;
     }
-
     if (selectedIndex === index) {
         tilesEl[index].classList.remove('selected');
         selectedIndex = null;
@@ -478,12 +510,10 @@ function processGameLogic(index, isFromPeer) {
     tilesEl[idx1].classList.remove('selected');
     selectedIndex = null; 
 
-    // --- Pengecekan Lintasan Algoritma Segala Arah ---
     const pathPoints = checkOnetPath(idx1, idx2);
 
     if (tile1.icon === tile2.icon && pathPoints) {
         tile1.isCleared = true; tile2.isCleared = true;
-        
         drawPath(pathPoints, isFromPeer);
 
         const matchClass = isFromPeer ? 'tile-match-peer' : 'tile-match-me';
@@ -493,12 +523,11 @@ function processGameLogic(index, isFromPeer) {
         setTimeout(() => {
             tilesEl[idx1].classList.add('hidden');
             tilesEl[idx2].classList.add('hidden');
-            applyGravity(); 
-        }, 400); 
+            applyGravity(); // Memanggil mekanik Candy Crush
+        }, 300); 
         
         const now = Date.now();
         let comboMulti = 1;
-        
         if (isFromPeer) {
             if (now - peerLastMatchTime < 4000) peerCombo++; else peerCombo = 1;
             peerLastMatchTime = now;
@@ -520,10 +549,15 @@ function processGameLogic(index, isFromPeer) {
     }
 }
 
+// --- MEKANIK CANDY CRUSH: BUAH TURUN & RESPAWN BUAH BARU ---
 function applyGravity() {
     let changed = false;
+    const themeKey = document.getElementById('theme-select').value;
+    const currentIcons = THEMES[themeKey];
+
     for (let x = 0; x < COLS; x++) {
         let emptySpots = 0;
+        // Geser ke bawah
         for (let y = ROWS - 1; y >= 0; y--) {
             let idx = y * COLS + x;
             if (onetBoardData[idx].isCleared) {
@@ -535,14 +569,27 @@ function applyGravity() {
                 changed = true;
             }
         }
+        // Munculkan ikon baru dari atas (Respawn)
+        for (let y = 0; y < emptySpots; y++) {
+            let idx = y * COLS + x;
+            let randomIcon = currentIcons[Math.floor(Math.random() * currentIcons.length)];
+            onetBoardData[idx] = { 
+                id: Date.now() + Math.random(), 
+                icon: randomIcon, 
+                isCleared: false, 
+                isRock: false 
+            };
+            changed = true;
+        }
     }
     if (changed) {
         setTimeout(() => { renderBoard(onetBoardData); }, 100); 
     }
 }
 
+// ================= POWER UPS =================
 function usePowerUp(type) {
-    if (myPowerUps[type] <= 0 || isFrozen) return;
+    if (myPowerUps[type] <= 0 || isFrozen || isGameOver) return;
     myPowerUps[type]--;
     updatePowerUpUI();
 
@@ -583,7 +630,7 @@ function doHint() {
             }
         }
     }
-    showToast("Oops, sepertinya tidak ada jalan yang terbuka!");
+    showToast("Tidak ada kecocokan yang terbuka!");
 }
 
 function handlePeerPowerUp(actionData) {
@@ -604,19 +651,17 @@ function handlePeerPowerUp(actionData) {
     }
 }
 
-// --- LOGIKA ONET PINTAR: GENERATOR MATRIX ---
+// ================= PATHFINDING & PORTAL ALGORITHM =================
 function getGrid() {
-    // Membuat grid dengan padding +2 agar garis bisa memutar lewat luar papan
     let grid = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(0));
     for(let i=0; i<onetBoardData.length; i++) {
         if(!onetBoardData[i].isCleared || onetBoardData[i].isRock) {
-            grid[Math.floor(i / COLS) + 1][(i % COLS) + 1] = 1; // 1 berarti rintangan (Batu / Ikon)
+            grid[Math.floor(i / COLS) + 1][(i % COLS) + 1] = 1; 
         }
     }
     return grid;
 }
 
-// --- LOGIKA ONET PINTAR: PENGECEKAN GARIS LURUS ---
 function checkLine(x1, y1, x2, y2, grid) {
     if (x1 === x2) {
         for (let y = Math.min(y1, y2) + 1; y < Math.max(y1, y2); y++) if (grid[y][x1] !== 0) return false;
@@ -629,28 +674,23 @@ function checkLine(x1, y1, x2, y2, grid) {
     return false;
 }
 
-// --- LOGIKA ONET PINTAR: PENCARIAN JALUR (0, 1, ATAU 2 BELOKAN) ---
 function checkOnetPath(idx1, idx2) {
     let x1 = (idx1 % COLS) + 1, y1 = Math.floor(idx1 / COLS) + 1;
     let x2 = (idx2 % COLS) + 1, y2 = Math.floor(idx2 / COLS) + 1;
     let grid = getGrid();
     
-    grid[y1][x1] = 0; grid[y2][x2] = 0; // Bebaskan posisi start dan end sementara
+    grid[y1][x1] = 0; grid[y2][x2] = 0; 
 
-    // Jalur 0 Belokan (Lurus)
+    // 1. Jalur Normal
     if (x1 === x2 || y1 === y2) {
         if (checkLine(x1, y1, x2, y2, grid)) return [{x: x1, y: y1}, {x: x2, y: y2}];
     }
-    
-    // Jalur 1 Belokan (Bentuk L)
     if (grid[y1][x2] === 0 && checkLine(x1, y1, x2, y1, grid) && checkLine(x2, y1, x2, y2, grid)) {
         return [{x: x1, y: y1}, {x: x2, y: y1}, {x: x2, y: y2}];
     }
     if (grid[y2][x1] === 0 && checkLine(x1, y1, x1, y2, grid) && checkLine(x1, y2, x2, y2, grid)) {
         return [{x: x1, y: y1}, {x: x1, y: y2}, {x: x2, y: y2}];
     }
-    
-    // Jalur 2 Belokan (Bentuk U atau Z - Horizontal dan Luar Papan)
     for (let x = 0; x < COLS + 2; x++) {
         if (grid[y1][x] === 0 && checkLine(x1, y1, x, y1, grid)) {
             if (grid[y2][x] === 0 && checkLine(x, y1, x, y2, grid) && checkLine(x, y2, x2, y2, grid)) {
@@ -658,8 +698,6 @@ function checkOnetPath(idx1, idx2) {
             }
         }
     }
-    
-    // Jalur 2 Belokan (Bentuk U atau Z - Vertikal dan Luar Papan)
     for (let y = 0; y < ROWS + 2; y++) {
         if (grid[y][x1] === 0 && checkLine(x1, y1, x1, y, grid)) {
             if (grid[y][x2] === 0 && checkLine(x1, y, x2, y, grid) && checkLine(x2, y, x2, y2, grid)) {
@@ -667,6 +705,25 @@ function checkOnetPath(idx1, idx2) {
             }
         }
     }
+
+    // 2. JALUR PORTAL TELEPORTASI (TEMBUS KIRI-KANAN / ATAS-BAWAH)
+    // Tembus Horizontal (Kiri-Kanan)
+    if (y1 === y2) {
+        let leftX = Math.min(x1, x2);
+        let rightX = Math.max(x1, x2);
+        if (checkLine(0, y1, leftX, y1, grid) && checkLine(rightX, y1, COLS + 1, y1, grid)) {
+            return [{x: leftX, y: y1}, {x: 0, y: y1}, {x: COLS+1, y: y2}, {x: rightX, y: y2}];
+        }
+    }
+    // Tembus Vertikal (Atas-Bawah)
+    if (x1 === x2) {
+        let topY = Math.min(y1, y2);
+        let bottomY = Math.max(y1, y2);
+        if (checkLine(x1, 0, x1, topY, grid) && checkLine(x1, bottomY, x1, ROWS + 1, grid)) {
+            return [{x: x1, y: topY}, {x: x1, y: 0}, {x: x2, y: ROWS+1}, {x: x2, y: bottomY}];
+        }
+    }
+
     return null; 
 }
 
