@@ -391,6 +391,95 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter'){ document.getElementById('btn-send-chat').click(); }
 });
 
+// ==========================================
+// PENERIMA SCREEN SHARE (PANGGILAN MASUK)
+// ==========================================
+peer.on('call', (call) => {
+    let setuju = confirm("Lawan ingin membagikan layar perangkatnya. Apakah Anda ingin menontonnya?");
+    if (setuju) {
+        // Jawab panggilan (kita tidak mengirim kamera kita, jadi kosongkan stream-nya)
+        call.answer(); 
+        currentCall = call;
+
+        // Saat menerima video stream dari lawan
+        call.on('stream', (remoteStream) => {
+            const videoEl = document.getElementById('live-video');
+            document.getElementById('video-container').style.display = 'block';
+            videoEl.srcObject = remoteStream;
+            showToast("Berhasil terhubung ke layar lawan!");
+        });
+
+        call.on('close', () => {
+            closeScreenShare();
+            showToast("Lawan menghentikan berbagi layar.");
+        });
+    } else {
+        call.close();
+    }
+});
+
+// ==========================================
+// PENGIRIM SCREEN SHARE (PANGGILAN KELUAR)
+// ==========================================
+let localStream = null;
+let currentCall = null;
+
+async function toggleScreenShare() {
+    if (!conn || !conn.open) {
+        showToast("Belum terhubung dengan teman!");
+        return;
+    }
+
+    // Jika sedang share screen, matikan!
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop()); // Matikan akses browser
+        localStream = null;
+        if (currentCall) currentCall.close(); // Tutup koneksi PeerJS
+        closeScreenShare();
+        document.getElementById('btn-screenshare').innerHTML = '<i class="fa-solid fa-desktop"></i> Layar';
+        showToast("Berbagi layar dihentikan.");
+        return;
+    }
+
+    // Jika belum share screen, mulai!
+    try {
+        // Meminta izin browser untuk merekam layar (dan audio sistem jika didukung)
+        localStream = await navigator.mediaDevices.getDisplayMedia({ 
+            video: { cursor: "always" }, 
+            audio: true 
+        });
+        
+        // Deteksi jika user menekan tombol "Stop sharing" bawaan browser di bawah layar
+        localStream.getVideoTracks()[0].onended = () => {
+            if (localStream) toggleScreenShare(); // Panggil ulang untuk mereset UI
+        };
+
+        // Telepon teman Anda dan kirimkan layar ini
+        currentCall = peer.call(conn.peer, localStream);
+        
+        document.getElementById('btn-screenshare').innerHTML = '<i class="fa-solid fa-stop text-danger"></i> Stop';
+        showToast("Menunggu teman menerima layar Anda...");
+
+        // Tampilkan juga layar Anda di pop-up kecil agar tahu apa yang dikirim
+        const videoEl = document.getElementById('live-video');
+        document.getElementById('video-container').style.display = 'block';
+        videoEl.srcObject = localStream;
+
+    } catch (err) {
+        console.error("Screen share error:", err);
+        showToast("Gagal atau dibatalkan saat mengakses layar.");
+    }
+}
+
+// Fungsi untuk menutup jendela video
+function closeScreenShare() {
+    const videoEl = document.getElementById('live-video');
+    document.getElementById('video-container').style.display = 'none';
+    if (videoEl.srcObject) {
+        videoEl.srcObject = null;
+    }
+}
+
 // --- 8. GAME ONET 3.0 (ENDLESS CANDY CRUSH + PORTAL + TIMER UPDATE) ---
 let onetBoardData = [];
 let selectedIndex = null;
