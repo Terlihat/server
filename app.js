@@ -630,20 +630,22 @@ function applyGravity() {
     }
 }
 
-// ================= POWER UPS =================
-function usePowerUp(type) {
-    if (myPowerUps[type] <= 0 || isFrozen || isGameOver) return;
-    myPowerUps[type]--;
-    updatePowerUpUI();
+// ================= UI UPDATES =================
+function updatePowerUpUI() {
+    // Mencari tombol berdasarkan ID yang ada di HTML Anda
+    const shuffleBtn = document.getElementById('btn-shuffle');
+    const hintBtn = document.getElementById('btn-hint');
+    const freezeBtn = document.getElementById('btn-freeze');
 
-    if (type === 'shuffle') {
-        doShuffle();
-        conn.send({ type: 'game_powerup', actionData: { action: 'shuffle', board: onetBoardData } });
-    } else if (type === 'hint') {
-        doHint(); 
-    } else if (type === 'freeze') {
-        conn.send({ type: 'game_powerup', actionData: { action: 'freeze' } });
-        showToast("Mantra pembeku dikirim ke teman!");
+    // Memperbarui isi tombol (termasuk ikon FontAwesome dan jumlah power-up yang dinamis)
+    if (shuffleBtn) {
+        shuffleBtn.innerHTML = `<i class="fa-solid fa-shuffle"></i> Acak (${myPowerUps.shuffle})`;
+    }
+    if (hintBtn) {
+        hintBtn.innerHTML = `<i class="fa-solid fa-lightbulb"></i> Petunjuk (${myPowerUps.hint})`;
+    }
+    if (freezeBtn) {
+        freezeBtn.innerHTML = `<i class="fa-solid fa-snowflake"></i> Bekukan (${myPowerUps.freeze})`;
     }
 }
 
