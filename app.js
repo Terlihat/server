@@ -752,16 +752,37 @@ function checkOnetPath(idx1, idx2) {
     
     grid[y1][x1] = 0; grid[y2][x2] = 0; 
 
-    // 1. Jalur Normal
+    
+    if (y1 === y2) {
+        let baris = y1;
+        let leftX = Math.min(x1, x2);
+        let rightX = Math.max(x1, x2);        
+        let leftTembus = checkRowEmpty(baris, 0, leftX, grid);
+        let rightTembus = checkRowEmpty(baris, rightX, COLS + 1, grid);        
+        if (leftTembus && rightTembus) {
+            return [
+                {x: leftX, y: baris},   // Buah Kiri
+                {x: 0, y: baris},       // Keluar Portal Kiri
+                {x: COLS + 1, y: baris}, // Masuk Portal Kanan
+                {x: rightX, y: baris}   // Buah Kanan
+            ];
+        }
+    }
+
+    // 1. Jalur 0 Belokan (Lurus)
     if (x1 === x2 || y1 === y2) {
         if (checkLine(x1, y1, x2, y2, grid)) return [{x: x1, y: y1}, {x: x2, y: y2}];
     }
+    
+    // 2. Jalur 1 Belokan (Bentuk L)
     if (grid[y1][x2] === 0 && checkLine(x1, y1, x2, y1, grid) && checkLine(x2, y1, x2, y2, grid)) {
         return [{x: x1, y: y1}, {x: x2, y: y1}, {x: x2, y: y2}];
     }
     if (grid[y2][x1] === 0 && checkLine(x1, y1, x1, y2, grid) && checkLine(x1, y2, x2, y2, grid)) {
         return [{x: x1, y: y1}, {x: x1, y: y2}, {x: x2, y: y2}];
     }
+    
+    // 3. Jalur 2 Belokan (Bentuk U atau Z - Lintas Baris/Kolom Kosong)
     for (let x = 0; x < COLS + 2; x++) {
         if (grid[y1][x] === 0 && checkLine(x1, y1, x, y1, grid)) {
             if (grid[y2][x] === 0 && checkLine(x, y1, x, y2, grid) && checkLine(x, y2, x2, y2, grid)) {
@@ -777,25 +798,7 @@ function checkOnetPath(idx1, idx2) {
         }
     }
 
-    // 2. JALUR PORTAL TELEPORTASI (TEMBUS KIRI-KANAN / ATAS-BAWAH)
-    // Tembus Horizontal (Kiri-Kanan)
-    if (y1 === y2) {
-        let leftX = Math.min(x1, x2);
-        let rightX = Math.max(x1, x2);
-        if (checkLine(0, y1, leftX, y1, grid) && checkLine(rightX, y1, COLS + 1, y1, grid)) {
-            return [{x: leftX, y: y1}, {x: 0, y: y1}, {x: COLS+1, y: y2}, {x: rightX, y: y2}];
-        }
-    }
-    // Tembus Vertikal (Atas-Bawah)
-    if (x1 === x2) {
-        let topY = Math.min(y1, y2);
-        let bottomY = Math.max(y1, y2);
-        if (checkLine(x1, 0, x1, topY, grid) && checkLine(x1, bottomY, x1, ROWS + 1, grid)) {
-            return [{x: x1, y: topY}, {x: x1, y: 0}, {x: x2, y: ROWS+1}, {x: x2, y: bottomY}];
-        }
-    }
-
-    return null; 
+    return null; // Tidak ada jalur yang ditemukan
 }
 
 function drawPath(points, isPeer) {
@@ -829,7 +832,6 @@ function drawPath(points, isPeer) {
     setTimeout(() => { svg.innerHTML = ''; }, 400);
 }
 
-// ================= EKSEKUSI POWER UPS =================
 function usePowerUp(type) {
     // Pengecekan kondisi sebelum power-up digunakan
     if (isGameOver) { 
