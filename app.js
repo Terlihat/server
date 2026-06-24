@@ -745,31 +745,42 @@ function checkLine(x1, y1, x2, y2, grid) {
     return false;
 }
 
+// =================================================================
+// LOGIKA ONET PINTAR 2.0: JALUR NORMAL + MODE PORTAL (CANDY CRUSH)
+// =================================================================
 function checkOnetPath(idx1, idx2) {
     let x1 = (idx1 % COLS) + 1, y1 = Math.floor(idx1 / COLS) + 1;
     let x2 = (idx2 % COLS) + 1, y2 = Math.floor(idx2 / COLS) + 1;
     let grid = getGrid();
     
+    // Bebaskan posisi start dan end sementara untuk simulasi pencarian jalur
     grid[y1][x1] = 0; grid[y2][x2] = 0; 
 
-    
+    // ===================================================
+    // MODE PORTAL (JALAN PINTAS TEMBUS TEMBOK KIRI-KANAN)
+    // ===================================================
     if (y1 === y2) {
-        let baris = y1;
         let leftX = Math.min(x1, x2);
-        let rightX = Math.max(x1, x2);        
-        let leftTembus = checkRowEmpty(baris, 0, leftX, grid);
-        let rightTembus = checkRowEmpty(baris, rightX, COLS + 1, grid);        
+        let rightX = Math.max(x1, x2);
+        
+        // PERBAIKAN: Menggunakan checkLine, bukan checkRowEmpty
+        let leftTembus = checkLine(0, y1, leftX, y1, grid);
+        let rightTembus = checkLine(rightX, y1, COLS + 1, y1, grid);
+        
         if (leftTembus && rightTembus) {
             return [
-                {x: leftX, y: baris},   // Buah Kiri
-                {x: 0, y: baris},       // Keluar Portal Kiri
-                {x: COLS + 1, y: baris}, // Masuk Portal Kanan
-                {x: rightX, y: baris}   // Buah Kanan
+                {x: leftX, y: y1}, 
+                {x: 0, y: y1}, 
+                {x: COLS + 1, y: y1}, 
+                {x: rightX, y: y1}
             ];
         }
     }
+    // ===================================================
 
-    // 1. Jalur 0 Belokan (Lurus)
+    // --- LOGIKA JALUR NORMAL ---
+
+    // 1. Jalur 0 Belokan (Lurus) - Termasuk untuk balok berdekatan
     if (x1 === x2 || y1 === y2) {
         if (checkLine(x1, y1, x2, y2, grid)) return [{x: x1, y: y1}, {x: x2, y: y2}];
     }
@@ -782,7 +793,7 @@ function checkOnetPath(idx1, idx2) {
         return [{x: x1, y: y1}, {x: x1, y: y2}, {x: x2, y: y2}];
     }
     
-    // 3. Jalur 2 Belokan (Bentuk U atau Z - Lintas Baris/Kolom Kosong)
+    // 3. Jalur 2 Belokan (Bentuk U atau Z)
     for (let x = 0; x < COLS + 2; x++) {
         if (grid[y1][x] === 0 && checkLine(x1, y1, x, y1, grid)) {
             if (grid[y2][x] === 0 && checkLine(x, y1, x, y2, grid) && checkLine(x, y2, x2, y2, grid)) {
@@ -798,7 +809,7 @@ function checkOnetPath(idx1, idx2) {
         }
     }
 
-    return null; // Tidak ada jalur yang ditemukan
+    return null; 
 }
 
 function drawPath(points, isPeer) {
