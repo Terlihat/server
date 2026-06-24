@@ -1,4 +1,4 @@
-const CACHE_NAME = 'SKYNET-v1.9';
+const CACHE_NAME = 'SKYNET-v2.0';
 const urlsToCache = [
   './',
   './index.html',
