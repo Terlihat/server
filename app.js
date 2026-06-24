@@ -194,8 +194,43 @@ function handleIncomingData(data) {
         addToLog(`Diterima: ${incomingFileInfo.name}`, true); releaseWakeLock();
         setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
     }
+
+    // ==========================================
+    // SISTEM VOTING ONET START/RESTART DI SINI
+    // ==========================================
+    else if (data.type === 'request_restart') {
+        let setuju = confirm("Lawan meminta untuk mulai ulang (restart) permainan. Apakah Anda setuju?");
+        if (setuju) {
+            showToast("Anda menyetujui mulai ulang game.");
+            conn.send({ type: 'restart_approved' });
+            executeStartGame(); 
+        } else {
+            showToast("Anda menolak mulai ulang game.");
+            conn.send({ type: 'restart_denied' });
+        }
+    } 
+    else if (data.type === 'restart_approved') {
+        showToast("Lawan menyetujui! Memulai game baru...");
+        executeStartGame(); 
+    } 
+    else if (data.type === 'restart_denied') {
+        showToast("Permintaan mulai ulang ditolak oleh lawan! 😢");
+    }
+    // ==========================================
+
     else if (data.type === 'game_init') {
+        // Reset timer dan waktu pada pihak yang menerima data papan (Player B)
+        clearInterval(timerInterval);
+        timeLeft = 300; 
+        timerInterval = setInterval(() => {
+            if(isGameOver) return;
+            timeLeft--;
+            updateScoreUI();
+            if(timeLeft <= 0) { triggerGameOver(); }
+        }, 1000);
+
         myScore = 0; peerScore = 0; myCombo = 0; peerCombo = 0;
+        isGameOver = false;
         renderBoard(data.boardData); showToast("Teman memulai game Onet!");
     } 
     else if (data.type === 'game_action') {
@@ -367,9 +402,17 @@ let isGameOver = false;
 
 const COLS = 6; const ROWS = 6;
 
+// Fungsi ini dipicu saat Anda menekan tombol "Mulai Ulang"
 function startNewGame() {
     if (!conn) { showToast("Belum terhubung dengan teman!"); return; }
     
+    // Kirim permintaan voting ke teman
+    showToast("Mengirim permintaan mulai ulang ke teman...");
+    conn.send({ type: 'request_restart' });
+}
+
+// Fungsi baru: Ini yang mengeksekusi pembuatan papan (dipanggil setelah disetujui)
+function executeStartGame() {
     const themeKey = document.getElementById('theme-select').value;
     const currentIcons = THEMES[themeKey];
     
@@ -756,4 +799,16 @@ function drawPath(points, isPeer) {
     svg.appendChild(polyline);
     
     setTimeout(() => { svg.innerHTML = ''; }, 400);
+}
+
+// ================= UI UPDATES =================
+function updatePowerUpUI() {
+    // Pastikan ID elemen HTML di bawah ini sesuai dengan ID di file HTML Anda
+    const shuffleBtn = document.getElementById('count-shuffle');
+    const hintBtn = document.getElementById('count-hint');
+    const freezeBtn = document.getElementById('count-freeze');
+
+    if (shuffleBtn) shuffleBtn.innerText = myPowerUps.shuffle;
+    if (hintBtn) hintBtn.innerText = myPowerUps.hint;
+    if (freezeBtn) freezeBtn.innerText = myPowerUps.freeze;
 }
