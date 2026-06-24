@@ -803,14 +803,40 @@ function drawPath(points, isPeer) {
     setTimeout(() => { svg.innerHTML = ''; }, 400);
 }
 
-// ================= UI UPDATES =================
-function updatePowerUpUI() {
-    // Pastikan ID elemen HTML di bawah ini sesuai dengan ID di file HTML Anda
-    const shuffleBtn = document.getElementById('count-shuffle');
-    const hintBtn = document.getElementById('count-hint');
-    const freezeBtn = document.getElementById('count-freeze');
+// ================= EKSEKUSI POWER UPS =================
+function usePowerUp(type) {
+    // Pengecekan kondisi sebelum power-up digunakan
+    if (isGameOver) { 
+        showToast("Game belum dimulai atau sudah selesai!"); 
+        return; 
+    }
+    if (isFrozen) { 
+        showToast("Anda sedang dibekukan oleh teman!"); 
+        return; 
+    }
+    if (myPowerUps[type] <= 0) { 
+        showToast("Power-Up sudah habis!"); 
+        return; 
+    }
 
-    if (shuffleBtn) shuffleBtn.innerText = myPowerUps.shuffle;
-    if (hintBtn) hintBtn.innerText = myPowerUps.hint;
-    if (freezeBtn) freezeBtn.innerText = myPowerUps.freeze;
+    // Kurangi jumlah jatah power-up
+    myPowerUps[type]--;
+    
+    // Perbarui teks tombol di UI
+    updatePowerUpUI();
+
+    // Jalankan efek masing-masing power-up
+    if (type === 'shuffle') {
+        doShuffle();
+        // Kirim data papan terbaru ke lawan agar sinkron setelah diacak
+        conn.send({ type: 'game_powerup', actionData: { action: 'shuffle', board: onetBoardData } });
+    } 
+    else if (type === 'hint') {
+        doHint(); 
+    } 
+    else if (type === 'freeze') {
+        // Kirim sinyal beku ke lawan
+        conn.send({ type: 'game_powerup', actionData: { action: 'freeze' } });
+        showToast("Mantra pembeku dikirim ke teman!");
+    }
 }
