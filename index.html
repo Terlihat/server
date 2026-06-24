@@ -1,171 +1,532 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#3b82f6">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    
-    <title>SKYNET</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Photo Editor | v1.7.2 Stable</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
     
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* --- CSS Variables --- */
+        :root[data-theme="dark"] {
+            --bg-main: #121212; --bg-panel: #1e1e1e; --text-main: #ffffff;
+            --text-muted: #a0a0a0; --primary: #bb86fc; --primary-hover: #9965f4;
+            --border: #333333; --input-bg: #2a2a2a; --modal-bg: rgba(0, 0, 0, 0.7);
+        }
+        :root[data-theme="light"] {
+            --bg-main: #f4f5f7; --bg-panel: #ffffff; --text-main: #202124;
+            --text-muted: #5f6368; --primary: #6200ea; --primary-hover: #3700b3;
+            --border: #dadce0; --input-bg: #f1f3f4; --modal-bg: rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- Global Styles --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s, border-color 0.2s; }
+        body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* --- Header --- */
+        header { background-color: var(--bg-panel); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .logo { font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px; }
+        .version { font-size: 0.75rem; color: #fff; background: linear-gradient(45deg, var(--primary), #20b2aa); padding: 4px 10px; border-radius: 20px; margin-left: 10px; font-weight: 600; }
+        
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .theme-toggle, .icon-btn { background: var(--bg-main); border: none; color: var(--text-main); font-size: 1.1rem; cursor: pointer; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); }
+        .theme-toggle:hover, .icon-btn:hover:not(:disabled) { background-color: var(--border); transform: translateY(-1px); }
+        .icon-btn:disabled { color: var(--text-muted); cursor: not-allowed; opacity: 0.5; }
+
+        /* --- Layout & Sidebar --- */
+        .container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 340px; background-color: var(--bg-panel); border-right: 1px solid var(--border); padding: 25px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 25px; }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background-color: var(--border); border-radius: 10px; }
+        
+        .tool-group { display: flex; flex-direction: column; gap: 10px; }
+        .tool-group h3 { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 5px; }
+
+        /* --- Controls --- */
+        .slider-container label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; font-weight: 500; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--primary); height: 6px; background: var(--input-bg); border-radius: 5px; outline: none; -webkit-appearance: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+        
+        .input-group { display: flex; gap: 10px; align-items: center; }
+        .input-group > div { flex: 1; }
+        .input-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; }
+        input[type="number"], input[type="text"], select { width: 100%; padding: 10px; background-color: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; outline: none; }
+        input[type="number"]:focus, input[type="text"]:focus, select:focus { border-color: var(--primary); }
+        input[type="color"] { width: 100%; height: 40px; padding: 0; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: none; }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .btn { padding: 12px; border: none; border-radius: 8px; background-color: var(--input-bg); color: var(--text-main); cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border); font-size: 0.85rem; transition: all 0.2s; }
+        .btn:hover { background-color: var(--border); }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: #ffffff; border: none; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(187, 134, 252, 0.3); }
+        .btn.active { border-color: var(--primary); color: var(--primary); background-color: rgba(187, 134, 252, 0.1); }
+        .btn-danger { background-color: rgba(207, 102, 121, 0.1); color: #cf6679; border-color: rgba(207, 102, 121, 0.3); }
+        .btn-danger:hover { background-color: #cf6679; color: #fff; }
+
+        /* --- Canvas Area --- */
+        .editor-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; background-color: var(--bg-main); overflow: auto; }
+        .editor-area.drawing-mode { cursor: crosshair; }
+        
+        .canvas-container { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; overflow: hidden; }
+        .canvas-wrapper { position: relative; max-width: 100%; max-height: calc(100vh - 120px); display: inline-flex; justify-content: center; align-items: center; touch-action: none; /* Mencegah pull-to-refresh di HP */ }
+        
+        #canvas { max-width: 100%; max-height: calc(100vh - 120px); object-fit: contain; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); display: none; background-image: repeating-conic-gradient(var(--border) 0% 25%, transparent 0% 50%); background-size: 20px 20px; }
+        #drawOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; border-radius: 8px; touch-action: none; }
+        
+        .drawing-mode #drawOverlay { pointer-events: auto; }
+
+        .upload-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; border: 2px dashed var(--border); padding: 50px; border-radius: 15px; width: 80%; max-width: 500px; background-color: var(--bg-panel); }
+        .upload-placeholder i { font-size: 5rem; margin-bottom: 20px; color: var(--primary); opacity: 0.8; }
+        input[type="file"] { display: none; }
+
+        /* --- Modal Styles --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-bg); backdrop-filter: blur(5px); z-index: 100; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-box { background-color: var(--bg-panel); width: 400px; border-radius: 12px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s; border: 1px solid var(--border); }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h2 { font-size: 1.2rem; }
+        .close-modal { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+        .close-modal:hover { color: var(--text-main); }
+    </style>
 </head>
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> SKYNET v2.3</div>
+        <div class="logo">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i>
+            M-Editor
+            <span class="version">v1.7.2</span>
+        </div>
         <div class="header-actions">
-            <button id="update-btn" style="display: none; background: var(--primary-dark); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; margin-right: 5px;"><i class="fa-solid fa-arrows-rotate"></i> Update App</button>
-            <button id="install-btn"><i class="fa-solid fa-download"></i> Install App</button>
-			<button class="btn-outline" onclick="toggleScreenShare()" id="btn-screenshare" style="margin-right: 8px; font-size: 0.8rem;">
-				<i class="fa-solid fa-desktop"></i> Layar
-			</button>
-            <button class="theme-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+            <button class="icon-btn" id="undoBtn" disabled title="Batal (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+            <button class="icon-btn" id="redoBtn" disabled title="Ulangi (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+            <span style="color: var(--border);">|</span>
+            <button class="theme-toggle" id="themeBtn" title="Ganti Tema"><i class="fa-solid fa-sun"></i></button>
         </div>
     </header>
 
     <div class="container">
-        <!-- AREA 1: KONEKSI -->
-        <div id="connection-area">
-            <div class="card">
-                <h3>ID Perangkat Anda</h3>
-                <div class="id-display" id="my-id">Memuat... <i class="fa-solid fa-circle-notch fa-spin"></i></div>
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="copyInviteLink()"><i class="fa-solid fa-link"></i> Salin Link</button>
-                    <button class="btn btn-outline" onclick="toggleQR()"><i class="fa-solid fa-qrcode"></i> QR Code</button>
-                </div>
-                <div id="qr-box"><div id="qrcode"></div></div>
-            </div>
+        <aside class="sidebar">
+            <button class="btn btn-primary" id="changeImgBtn" style="display: none; margin-bottom: -10px; width: 100%;"><i class="fa-solid fa-folder-open"></i> Ganti Gambar Baru</button>
 
-            <div class="card" style="margin-top: 1.2rem;">
-                <h3>Hubungkan Manual</h3>
-                <div class="text-send-area" style="margin-bottom: 0;">
-                    <input type="text" id="peer-id-input" class="text-input" placeholder="Masukkan 4 digit ID teman..." inputmode="numeric" pattern="[0-9]*" maxlength="4">
-                    <button class="btn-send-text" onclick="connectManually()" style="background: var(--primary);"><i class="fa-solid fa-plug"></i></button>
+            <div class="tool-group">
+                <h3>Filter Instan</h3>
+                <div class="btn-grid">
+                    <button class="btn preset-btn" data-preset="normal">Normal</button>
+                    <button class="btn preset-btn" data-preset="vintage">Vintage</button>
+                    <button class="btn preset-btn" data-preset="cinematic">Cinematic</button>
+                    <button class="btn preset-btn" data-preset="bw">B & W</button>
                 </div>
             </div>
-            <div class="card" style="margin-top: 1.2rem; opacity: 0.8;" id="status-wait">
-                <p style="font-size: 0.9rem;"><i class="fa-solid fa-spinner fa-spin"></i> Menunggu koneksi masuk...</p>
-            </div>
-        </div>
 
-        <!-- AREA 2: TRANSFER FILE -->
-        <div class="card" id="transfer-area">
-            <div class="status-badge"><i class="fa-solid fa-file-shield"></i> Mode Transfer Berkas</div>
-            <div class="file-upload-wrapper" id="drop-zone">
-                <div class="file-upload-ui" id="drop-ui">
-                    <i class="fa-solid fa-cloud-arrow-up"></i><span>Ketuk atau Seret File ke Sini</span>
-                </div>
-                <input type="file" id="file-input" multiple>
+            <div class="tool-group">
+                <h3>Filter Warna</h3>
+                <div class="slider-container"><label><span>Kecerahan</span> <span id="bright-val">100%</span></label><input type="range" id="brightness" min="0" max="200" value="100"></div>
+                <div class="slider-container"><label><span>Kontras</span> <span id="contrast-val">100%</span></label><input type="range" id="contrast" min="0" max="200" value="100"></div>
+                <div class="slider-container"><label><span>Saturasi</span> <span id="saturate-val">100%</span></label><input type="range" id="saturate" min="0" max="200" value="100"></div>
+                <div class="slider-container"><label><span>Blur</span> <span id="blur-val">0px</span></label><input type="range" id="blur" min="0" max="20" value="0" step="0.5"></div>
             </div>
-            <div class="file-list" id="file-list"></div>
-            <div class="btn-group">
-                <button class="btn btn-primary" id="send-btn" disabled><i class="fa-solid fa-file-export"></i> Kirim File</button>
-                <button class="btn btn-danger" id="cancel-btn"><i class="fa-solid fa-stop"></i> Batal</button>
-            </div>
-            <div class="progress-container" id="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
-            <div class="stats-area" id="stats-area">
-                <span id="progress-text">0%</span><span id="speed-text">0 MB/s</span><span id="eta-text">--:--</span>
-            </div>
-            <div class="log-area">
-                <h4>Riwayat Berkas Sesi Ini:</h4>
-                <ul class="log-list" id="transfer-log"><li style="opacity: 0.6; font-style: italic;" id="empty-log">Belum ada berkas terkirim/diterima.</li></ul>
-            </div>
-        </div>
 
-        <!-- AREA 3: OBROLAN -->
-        <div id="chat-area">
-            <div class="chat-main-container">
-                <div class="chat-box-area" id="chat-box"></div>
-                <div class="chat-input-area">
-                    <input type="text" id="chat-input" class="text-input" placeholder="Tulis pesan rahasia...">
-                    <button class="btn-send-text" id="btn-send-chat" style="padding: 0 1.2rem;"><i class="fa-solid fa-paper-plane"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <!-- AREA 4: GAME ONET 2.0 -->
-        <div class="card" id="game-area">
-            <div class="status-badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
-                <i class="fa-solid fa-gamepad"></i> Onet Multiplayer
+            <div class="tool-group">
+                <h3>Efek Spesial</h3>
+                <div class="slider-container"><label><span>Vignette (Tepi Gelap)</span> <span id="vignette-val">0%</span></label><input type="range" id="vignette" min="0" max="100" value="0"></div>
+                <div class="slider-container"><label><span>Noise (Film Grain)</span> <span id="noise-val">0%</span></label><input type="range" id="noise" min="0" max="100" value="0"></div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
-                <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                    <span id="game-score" style="font-weight: bold; color: var(--primary);">Skor: 0</span>
-                    <span id="combo-text" style="color: #f59e0b; font-weight: 800; font-size: 0.9rem; height: 1.2rem; margin-top: 4px;"></span>
+            <div class="tool-group">
+                <h3>Stiker / Logo</h3>
+                <label for="stickerInput" class="btn" style="width: 100%; cursor: pointer;"><i class="fa-solid fa-image"></i> Pilih Stiker</label>
+                <input type="file" id="stickerInput" accept="image/png, image/jpeg, image/webp">
+                <div id="stickerControls" style="display: none; margin-top: 10px;">
+                    <div class="slider-container"><label><span>Ukuran</span> <span id="st-size-val">20%</span></label><input type="range" id="stickerSize" min="5" max="100" value="20"></div>
+                    <div class="slider-container"><label><span>Posisi X</span> <span id="st-x-val">50%</span></label><input type="range" id="stickerX" min="0" max="100" value="50"></div>
+                    <div class="slider-container"><label><span>Posisi Y</span> <span id="st-y-val">50%</span></label><input type="range" id="stickerY" min="0" max="100" value="50"></div>
+                    <button class="btn btn-danger" id="removeStickerBtn" style="width: 100%;"><i class="fa-solid fa-trash"></i> Hapus Stiker</button>
                 </div>
-                <div style="display: flex; gap: 8px;">
-                    <select id="theme-select" class="text-input" style="padding: 6px; width: auto; border-radius: 8px;">
-                        <option value="buah">🍎 Buah</option>
-                        <option value="hewan">🐶 Hewan</option>
-                        <option value="tech">💻 Tech</option>
+            </div>
+
+            <div class="tool-group">
+                <h3>Potong & Gambar</h3>
+                <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: -5px;">Smart Crop</label>
+                <div class="btn-grid-3">
+                    <button class="btn" id="crop11">1:1</button>
+                    <button class="btn" id="crop43">4:3</button>
+                    <button class="btn" id="crop169">16:9</button>
+                </div>
+                <button class="btn" id="toggleDrawBtn" style="width: 100%; margin-top: 5px;"><i class="fa-solid fa-paintbrush"></i> Mulai Coretan</button>
+                <div class="input-group" id="brushControls" style="display: none; margin-top: 5px;">
+                    <div style="flex: 2;"><input type="range" id="brushSize" min="1" max="50" value="5"></div>
+                    <div style="flex: 1;"><input type="color" id="brushColor" value="#ff0000"></div>
+                </div>
+            </div>
+
+            <div class="tool-group">
+                <h3>Dekorasi Teks</h3>
+                <div class="input-group">
+                    <div style="flex: 2;"><label>Tebal Bingkai</label><input type="number" id="frameSize" value="0" min="0"></div>
+                    <div style="flex: 1;"><label>Warna</label><input type="color" id="frameColor" value="#ffffff"></div>
+                </div>
+                <div class="input-group">
+                    <div style="flex: 2;"><label>Watermark</label><input type="text" id="watermarkText" placeholder="Teks..."></div>
+                    <div style="flex: 1;"><label>Warna</label><input type="color" id="watermarkColor" value="#ffffff"></div>
+                </div>
+            </div>
+
+            <div class="tool-group">
+                <h3>Transformasi</h3>
+                <div class="btn-grid">
+                    <button class="btn" id="rotateLeftBtn"><i class="fa-solid fa-rotate-left"></i> Kiri</button>
+                    <button class="btn" id="rotateRightBtn"><i class="fa-solid fa-rotate-right"></i> Kanan</button>
+                    <button class="btn" id="flipHorizontalBtn"><i class="fa-solid fa-arrows-left-right"></i> Flip H</button>
+                    <button class="btn" id="flipVerticalBtn"><i class="fa-solid fa-arrows-up-down"></i> Flip V</button>
+                </div>
+            </div>
+
+            <div class="tool-group" style="border-bottom: none; margin-top: 20px;">
+                <button class="btn" id="resetBtn" style="margin-bottom: 10px;"><i class="fa-solid fa-arrow-rotate-left"></i> Reset Perubahan</button>
+                <button class="btn btn-primary" id="openExportBtn"><i class="fa-solid fa-download"></i> Simpan / Ekspor (Ctrl+S)</button>
+            </div>
+        </aside>
+
+        <main class="editor-area" id="editorArea">
+            <div class="upload-placeholder" id="uploadPlaceholder">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <h2>Mulai Mengedit Foto</h2>
+                <p style="margin: 10px 0 25px;">Seret & lepas gambar ke sini atau klik tombol di bawah</p>
+                <label for="uploadInput" class="btn btn-primary" style="display: inline-flex; cursor: pointer; padding: 12px 30px; font-size: 1rem;"><i class="fa-solid fa-folder-open"></i> Pilih Gambar</label>
+                <input type="file" id="uploadInput" accept="image/png, image/jpeg, image/webp">
+            </div>
+
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="canvas"></canvas>
+                    <canvas id="drawOverlay"></canvas>
+                </div>
+            </div>
+            
+            <input type="hidden" id="resizeWidth">
+            <input type="hidden" id="resizeHeight">
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-sliders"></i> Pengaturan Ekspor</h2>
+                <button class="close-modal" id="closeExportBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="input-group" style="margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label>Format Gambar</label>
+                    <select id="exportFormat">
+                        <option value="image/jpeg">JPEG (.jpg) - Ukuran Kecil</option>
+                        <option value="image/png">PNG (.png) - Kualitas Tinggi</option>
+                        <option value="image/webp">WEBP (.webp) - Modern Web</option>
                     </select>
-                    <button class="btn-primary" onclick="startNewGame()" style="padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; color: white;">
-                        <i class="fa-solid fa-play"></i> Mulai
-                    </button>
                 </div>
             </div>
-
-            <div id="power-ups-area" style="display: flex; gap: 8px; margin-bottom: 1rem; justify-content: center;">
-                <button class="btn-outline" onclick="usePowerUp('shuffle')" id="btn-shuffle" style="flex:1; padding: 6px; font-size: 0.8rem;"><i class="fa-solid fa-shuffle"></i> Acak (1)</button>
-                <button class="btn-outline" onclick="usePowerUp('hint')" id="btn-hint" style="flex:1; padding: 6px; font-size: 0.8rem;"><i class="fa-solid fa-lightbulb"></i> Petunjuk (1)</button>
-                <button class="btn-outline" onclick="usePowerUp('freeze')" id="btn-freeze" style="flex:1; padding: 6px; font-size: 0.8rem;"><i class="fa-solid fa-snowflake"></i> Bekukan (1)</button>
+            <div class="slider-container" id="qualityContainer">
+                <label><span>Kualitas Gambar</span> <span id="quality-val">90%</span></label>
+                <input type="range" id="exportQuality" min="10" max="100" value="90">
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 5px;">*Kualitas rendah akan memperkecil ukuran file.</small>
             </div>
-
-            <div id="board-wrapper" style="position: relative;">
-                <div class="onet-board" id="onet-board"></div>
-                <svg id="path-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; overflow: visible;"></svg>
+            <div class="input-group" style="margin-top: 25px;">
+                <button class="btn" id="cancelExportBtn" style="flex: 1;">Batal</button>
+                <button class="btn btn-primary" id="confirmExportBtn" style="flex: 1;"><i class="fa-solid fa-check"></i> Unduh Sekarang</button>
             </div>
         </div>
     </div>
-	
-	<div id="video-container" style="display: none; position: fixed; bottom: 80px; right: 20px; width: 280px; background: var(--card-bg); border: 2px solid var(--primary); border-radius: 8px; overflow: hidden; z-index: 9999; box-shadow: var(--shadow); transition: 0.3s;">
-		<div style="background: var(--primary); color: white; padding: 6px 10px; font-size: 0.8rem; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
-			<span><i class="fa-solid fa-broadcast-tower"></i> Live Stream</span>
-			<div>
-				<button onclick="toggleMaximizeVideo()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1rem; margin-right: 10px;"><i id="icon-maximize" class="fa-solid fa-expand"></i></button>
-				<button onclick="closeScreenShare()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1rem;"><i class="fa-solid fa-times"></i></button>
-			</div>
-		</div>
-		<video id="live-video" autoplay playsinline style="width: 100%; height: auto; display: block; background: #000;"></video>
-	</div>
-	
-	<div class="page" id="page-canvas" style="display: none; height: 100vh; flex-direction: column;">
-		<div style="padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); display: flex; gap: 12px; align-items: center; z-index: 10;">
-			<input type="color" id="brush-color" value="#3b82f6" style="width: 40px; height: 40px; border: none; cursor: pointer;">
-			<input type="range" id="brush-size" min="1" max="20" value="4" style="flex-grow: 1;">
-			<button class="btn-outline" onclick="clearCanvas(true)" style="padding: 8px 12px; font-size: 0.8rem;"><i class="fa-solid fa-trash"></i> Bersih</button>
-		</div>
-		<div id="canvas-container" style="flex-grow: 1; width: 100%; position: relative; background: #ffffff;">
-			<canvas id="shared-board"></canvas>
-		</div>
-	</div>
 
-    <!-- NAVBAR BAWAH -->
-    <nav class="bottom-nav" id="bottom-bar">
-        <div class="nav-item active" id="nav-file" onclick="switchPage('file')">
-            <i class="fa-solid fa-folder-open"></i><span>File</span>
-        </div>
-        <div class="nav-item" id="nav-chat" onclick="switchPage('chat')">
-            <i class="fa-solid fa-comments"></i><span>Obrolan</span>
-        </div>
-		<div class="nav-item" id="nav-canvas" onclick="switchPage('canvas')">
-			<i class="fa-solid fa-palette"></i><span>Papan</span>
-		</div>
-        <div class="nav-item" id="nav-game" onclick="switchPage('game')">
-            <i class="fa-solid fa-gamepad"></i><span>Game</span>
-        </div>
-    </nav>
+    <script>
+        const themeBtn = document.getElementById('themeBtn');
+        const uploadInput = document.getElementById('uploadInput');
+        const changeImgBtn = document.getElementById('changeImgBtn'); // Perbaikan UX
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const drawOverlay = document.getElementById('drawOverlay');
+        const drawCtx = drawOverlay.getContext('2d');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const editorArea = document.getElementById('editorArea');
 
-    <div id="toast">Notifikasi</div>
-    <script src="app.js"></script>
+        let img = new Image(); let isInternalUpdate = false; let editHistory = []; let historyIndex = -1; const MAX_HISTORY = 10;
+        const undoBtn = document.getElementById('undoBtn'), redoBtn = document.getElementById('redoBtn');
+
+        let currentFilters = { brightness: 100, contrast: 100, saturate: 100, blur: 0, vignette: 0, noise: 0, rotate: 0, flipH: 1, flipV: 1 };
+        let stickerImg = new Image(), stickerSettings = { hasSticker: false, sizeScale: 20, posX: 50, posY: 50 };
+
+        const stickerInput = document.getElementById('stickerInput'), stickerControls = document.getElementById('stickerControls');
+        const presetValues = {
+            normal: { brightness: 100, contrast: 100, saturate: 100, blur: 0, vignette: 0, noise: 0 },
+            vintage: { brightness: 110, contrast: 90, saturate: 60, blur: 0, vignette: 25, noise: 35 },
+            cinematic: { brightness: 90, contrast: 130, saturate: 120, blur: 0, vignette: 40, noise: 15 },
+            bw: { brightness: 100, contrast: 110, saturate: 0, blur: 0, vignette: 15, noise: 25 }
+        };
+
+        const sliders = ['brightness', 'contrast', 'saturate', 'blur', 'vignette', 'noise'].map(id => document.getElementById(id));
+        const valSpans = ['bright-val', 'contrast-val', 'saturate-val', 'blur-val', 'vignette-val', 'noise-val'].map(id => document.getElementById(id));
+        const frameSize = document.getElementById('frameSize'), frameColor = document.getElementById('frameColor');
+        const watermarkText = document.getElementById('watermarkText'), watermarkColor = document.getElementById('watermarkColor');
+        const resizeW = document.getElementById('resizeWidth'), resizeH = document.getElementById('resizeHeight');
+
+        themeBtn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+            themeBtn.innerHTML = current === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+        });
+
+        const getNoisePattern = () => {
+            const noiseCanvas = document.createElement('canvas'); noiseCanvas.width = 150; noiseCanvas.height = 150;
+            const nCtx = noiseCanvas.getContext('2d'); const imgData = nCtx.createImageData(150, 150); const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) { const val = Math.random() * 255; data[i] = val; data[i+1] = val; data[i+2] = val; data[i+3] = 255; }
+            nCtx.putImageData(imgData, 0, 0); return ctx.createPattern(noiseCanvas, 'repeat');
+        };
+        const noisePattern = getNoisePattern();
+
+        function saveState() {
+            if (historyIndex < editHistory.length - 1) editHistory = editHistory.slice(0, historyIndex + 1);
+            editHistory.push({ src: img.src, filters: { ...currentFilters }, decor: { frame: frameSize.value, wText: watermarkText.value }, sticker: { ...stickerSettings, stickerSrc: stickerSettings.hasSticker ? stickerImg.src : null } });
+            if (editHistory.length > MAX_HISTORY) editHistory.shift(); else historyIndex++;
+            updateHistoryButtons();
+        }
+        function updateHistoryButtons() { undoBtn.disabled = historyIndex <= 0; redoBtn.disabled = historyIndex >= editHistory.length - 1; }
+        
+        function restoreState(index) {
+            const state = editHistory[index]; currentFilters = { ...state.filters };
+            frameSize.value = state.decor.frame; watermarkText.value = state.decor.wText; stickerSettings = { ...state.sticker };
+            
+            sliders[0].value = currentFilters.brightness; valSpans[0].innerText = `${currentFilters.brightness}%`;
+            sliders[1].value = currentFilters.contrast; valSpans[1].innerText = `${currentFilters.contrast}%`;
+            sliders[2].value = currentFilters.saturate; valSpans[2].innerText = `${currentFilters.saturate}%`;
+            sliders[3].value = currentFilters.blur; valSpans[3].innerText = `${currentFilters.blur}px`;
+            sliders[4].value = currentFilters.vignette; valSpans[4].innerText = `${currentFilters.vignette}%`;
+            sliders[5].value = currentFilters.noise; valSpans[5].innerText = `${currentFilters.noise}%`;
+
+            if (stickerSettings.hasSticker) {
+                document.getElementById('stickerSize').value = stickerSettings.sizeScale; document.getElementById('st-size-val').innerText = `${stickerSettings.sizeScale}%`;
+                document.getElementById('stickerX').value = stickerSettings.posX; document.getElementById('st-x-val').innerText = `${stickerSettings.posX}%`;
+                document.getElementById('stickerY').value = stickerSettings.posY; document.getElementById('st-y-val').innerText = `${stickerSettings.posY}%`;
+                stickerControls.style.display = 'block';
+                if (stickerImg.src !== state.sticker.stickerSrc) stickerImg.src = state.sticker.stickerSrc;
+            } else stickerControls.style.display = 'none';
+
+            if (img.src !== state.src) { isInternalUpdate = true; img.src = state.src; } else applyFilters();
+            updateHistoryButtons();
+        }
+        
+        undoBtn.addEventListener('click', () => { if (historyIndex > 0) { historyIndex--; restoreState(historyIndex); } });
+        redoBtn.addEventListener('click', () => { if (historyIndex < editHistory.length - 1) { historyIndex++; restoreState(historyIndex); } });
+
+        uploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader(); reader.onload = (event) => { editHistory = []; historyIndex = -1; img.src = event.target.result; }; reader.readAsDataURL(file);
+        });
+
+        // Event listener untuk tombol ganti gambar baru
+        changeImgBtn.addEventListener('click', () => { uploadInput.click(); });
+
+        img.onload = () => {
+            if (!isInternalUpdate) {
+                // Skala otomatis gambar untuk mencegah memori penuh
+                const MAX_SAFE_RES = 2048; 
+                let scale = 1;
+                if (img.width > MAX_SAFE_RES || img.height > MAX_SAFE_RES) {
+                    scale = Math.min(MAX_SAFE_RES / img.width, MAX_SAFE_RES / img.height);
+                }
+                resizeW.value = Math.floor(img.width * scale);
+                resizeH.value = Math.floor(img.height * scale);
+
+                uploadPlaceholder.style.display = 'none'; 
+                changeImgBtn.style.display = 'flex'; // Menampilkan tombol ganti gambar
+                canvas.style.display = 'block'; 
+                drawOverlay.style.display = 'block';
+                
+                resetFilters(true, false); saveState();
+            } else { 
+                isInternalUpdate = false; 
+                resizeW.value = img.width; 
+                resizeH.value = img.height; 
+                applyFilters(); 
+            }
+        };
+
+        stickerInput.addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return; if (!img.src) return alert("Unggah gambar utama terlebih dahulu!");
+            const reader = new FileReader(); reader.onload = (event) => { stickerImg.src = event.target.result; }; reader.readAsDataURL(file);
+        });
+        stickerImg.onload = () => { stickerSettings.hasSticker = true; stickerControls.style.display = 'block'; applyFilters(); saveState(); };
+        document.getElementById('removeStickerBtn').addEventListener('click', () => { stickerSettings.hasSticker = false; stickerControls.style.display = 'none'; stickerInput.value = ''; applyFilters(); saveState(); });
+
+        function applyFilters() {
+            if (!img.src) return;
+            let baseW = parseInt(resizeW.value) || img.width, baseH = parseInt(resizeH.value) || img.height;
+            const rotation = currentFilters.rotate % 360, isVertical = rotation === 90 || rotation === 270 || rotation === -90 || rotation === -270;
+            canvas.width = isVertical ? baseH : baseW; canvas.height = isVertical ? baseW : baseH; 
+            drawOverlay.width = canvas.width; drawOverlay.height = canvas.height;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2); if (rotation !== 0) ctx.rotate(rotation * Math.PI / 180); ctx.scale(currentFilters.flipH, currentFilters.flipV);
+            ctx.filter = `brightness(${currentFilters.brightness}%) contrast(${currentFilters.contrast}%) saturate(${currentFilters.saturate}%) blur(${currentFilters.blur}px)`;
+            ctx.drawImage(img, -baseW / 2, -baseH / 2, baseW, baseH); ctx.restore();
+
+            if (stickerSettings.hasSticker && stickerImg.complete) {
+                const targetW = canvas.width * (stickerSettings.sizeScale / 100), targetH = targetW * (stickerImg.height / stickerImg.width);
+                const targetX = (canvas.width - targetW) * (stickerSettings.posX / 100), targetY = (canvas.height - targetH) * (stickerSettings.posY / 100);
+                ctx.drawImage(stickerImg, targetX, targetY, targetW, targetH);
+            }
+            if (currentFilters.vignette > 0) {
+                const radius = Math.max(canvas.width, canvas.height) / 2;
+                const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, radius * (1 - (currentFilters.vignette/100) * 0.8), canvas.width/2, canvas.height/2, radius * 1.2);
+                gradient.addColorStop(0, 'rgba(0,0,0,0)'); gradient.addColorStop(1, `rgba(0,0,0,${currentFilters.vignette / 100})`);
+                ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            if (currentFilters.noise > 0) { ctx.save(); ctx.globalAlpha = (currentFilters.noise / 100) * 0.3; ctx.fillStyle = noisePattern; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore(); }
+            
+            const fSize = parseInt(frameSize.value); if (fSize > 0) { ctx.lineWidth = fSize * 2; ctx.strokeStyle = frameColor.value; ctx.strokeRect(0, 0, canvas.width, canvas.height); }
+            if (watermarkText.value.trim() !== '') {
+                const fontSize = Math.max(20, Math.floor(canvas.width * 0.04));
+                ctx.font = `bold ${fontSize}px Arial`; ctx.fillStyle = watermarkColor.value; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+                ctx.shadowColor = "rgba(0,0,0,0.7)"; ctx.shadowBlur = 5; ctx.fillText(watermarkText.value, canvas.width - (fontSize/2), canvas.height - (fontSize/2)); ctx.shadowBlur = 0;
+            }
+        }
+
+        const updateStickerSlider = (id, key, labelId) => {
+            const slider = document.getElementById(id);
+            slider.addEventListener('input', (e) => { stickerSettings[key] = parseInt(e.target.value); document.getElementById(labelId).innerText = `${e.target.value}%`; applyFilters(); });
+            slider.addEventListener('change', saveState);
+        };
+        updateStickerSlider('stickerSize', 'sizeScale', 'st-size-val'); updateStickerSlider('stickerX', 'posX', 'st-x-val'); updateStickerSlider('stickerY', 'posY', 'st-y-val');
+
+        [frameSize, watermarkText].forEach(el => el.addEventListener('change', () => { applyFilters(); saveState(); }));
+        [frameColor, watermarkColor].forEach(el => el.addEventListener('input', applyFilters));
+        document.getElementById('rotateLeftBtn').addEventListener('click', () => { currentFilters.rotate -= 90; applyFilters(); saveState(); });
+        document.getElementById('rotateRightBtn').addEventListener('click', () => { currentFilters.rotate += 90; applyFilters(); saveState(); });
+        document.getElementById('flipHorizontalBtn').addEventListener('click', () => { currentFilters.flipH *= -1; applyFilters(); saveState(); });
+        document.getElementById('flipVerticalBtn').addEventListener('click', () => { currentFilters.flipV *= -1; applyFilters(); saveState(); });
+
+        const updateSliderVal = (idx, key, e, unit) => { currentFilters[key] = e.target.value; valSpans[idx].innerText = `${e.target.value}${unit}`; applyFilters(); };
+        sliders[0].addEventListener('input', (e) => updateSliderVal(0, 'brightness', e, '%')); sliders[1].addEventListener('input', (e) => updateSliderVal(1, 'contrast', e, '%'));
+        sliders[2].addEventListener('input', (e) => updateSliderVal(2, 'saturate', e, '%')); sliders[3].addEventListener('input', (e) => updateSliderVal(3, 'blur', e, 'px'));
+        sliders[4].addEventListener('input', (e) => updateSliderVal(4, 'vignette', e, '%')); sliders[5].addEventListener('input', (e) => updateSliderVal(5, 'noise', e, '%'));
+        sliders.forEach(slider => slider.addEventListener('change', saveState));
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const conf = presetValues[e.target.getAttribute('data-preset')];
+                currentFilters.brightness = conf.brightness; sliders[0].value = conf.brightness; valSpans[0].innerText = `${conf.brightness}%`;
+                currentFilters.contrast = conf.contrast;     sliders[1].value = conf.contrast;     valSpans[1].innerText = `${conf.contrast}%`;
+                currentFilters.saturate = conf.saturate;     sliders[2].value = conf.saturate;     valSpans[2].innerText = `${conf.saturate}%`;
+                currentFilters.blur = conf.blur;             sliders[3].value = conf.blur;         valSpans[3].innerText = `${conf.blur}px`;
+                currentFilters.vignette = conf.vignette;     sliders[4].value = conf.vignette;     valSpans[4].innerText = `${conf.vignette}%`;
+                currentFilters.noise = conf.noise;           sliders[5].value = conf.noise;        valSpans[5].innerText = `${conf.noise}%`;
+                applyFilters(); saveState();
+            });
+        });
+
+        // BUG FIX 3: Reset Filter sebelum Smart Crop
+        function applySmartCrop(targetRatio) {
+            if (!img.src) return;
+            
+            // Simpan rotasi sementara dan kembalikan ke 0
+            const currentRot = currentFilters.rotate;
+            currentFilters.rotate = 0;
+            applyFilters();
+
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                const tempCanvas = document.createElement('canvas'); const tCtx = tempCanvas.getContext('2d');
+                let sW = tempImg.width, sH = tempImg.height, cW = sW, cH = sH, dX = 0, dY = 0;
+                if (sW / sH > targetRatio) { cW = sH * targetRatio; dX = (sW - cW) / 2; } else { cH = sW / targetRatio; dY = (sH - cH) / 2; }
+                tempCanvas.width = cW; tempCanvas.height = cH; tCtx.drawImage(tempImg, dX, dY, cW, cH, 0, 0, cW, cH);
+                
+                resetFilters(false, false); 
+                isInternalUpdate = true; 
+                img.src = tempCanvas.toDataURL('image/png'); 
+                setTimeout(saveState, 50);
+            };
+            tempImg.src = canvas.toDataURL('image/png');
+        }
+        document.getElementById('crop11').addEventListener('click', () => applySmartCrop(1)); document.getElementById('crop43').addEventListener('click', () => applySmartCrop(4/3)); document.getElementById('crop169').addEventListener('click', () => applySmartCrop(16/9));
+
+        const toggleDrawBtn = document.getElementById('toggleDrawBtn'), brushControls = document.getElementById('brushControls');
+        let isDrawingMode = false, isDrawing = false, lastX = 0, lastY = 0;
+        toggleDrawBtn.addEventListener('click', () => {
+            if (!img.src) return alert("Unggah gambar terlebih dahulu!");
+            isDrawingMode = !isDrawingMode;
+            if (isDrawingMode) {
+                toggleDrawBtn.innerHTML = '<i class="fa-solid fa-check"></i> Selesai Coretan'; toggleDrawBtn.classList.add('active'); brushControls.style.display = 'flex'; editorArea.classList.add('drawing-mode');
+            } else {
+                toggleDrawBtn.innerHTML = '<i class="fa-solid fa-paintbrush"></i> Mulai Coretan'; toggleDrawBtn.classList.remove('active'); brushControls.style.display = 'none'; editorArea.classList.remove('drawing-mode');
+                const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvas.width; tempCanvas.height = canvas.height; const tCtx = tempCanvas.getContext('2d');
+                tCtx.drawImage(canvas, 0, 0); tCtx.drawImage(drawOverlay, 0, 0);
+                resetFilters(false, false); isInternalUpdate = true; img.src = tempCanvas.toDataURL('image/png'); drawCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height); setTimeout(saveState, 50);
+            }
+        });
+
+        // Event Mouse
+        const getMousePos = (e) => { const rect = drawOverlay.getBoundingClientRect(), scaleX = drawOverlay.width / rect.width, scaleY = drawOverlay.height / rect.height; return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY }; };
+        drawOverlay.addEventListener('mousedown', (e) => { if (!isDrawingMode) return; isDrawing = true; const pos = getMousePos(e); lastX = pos.x; lastY = pos.y; });
+        drawOverlay.addEventListener('mousemove', (e) => {
+            if (!isDrawing || !isDrawingMode) return; const pos = getMousePos(e);
+            drawCtx.beginPath(); drawCtx.lineCap = 'round'; drawCtx.lineJoin = 'round'; drawCtx.lineWidth = document.getElementById('brushSize').value; drawCtx.strokeStyle = document.getElementById('brushColor').value;
+            drawCtx.moveTo(lastX, lastY); drawCtx.lineTo(pos.x, pos.y); drawCtx.stroke(); lastX = pos.x; lastY = pos.y;
+        });
+        drawOverlay.addEventListener('mouseup', () => isDrawing = false); drawOverlay.addEventListener('mouseout', () => isDrawing = false);
+
+        // BUG FIX 1: Event Touch (Mobile Friendly)
+        const getTouchPos = (e) => { 
+            const rect = drawOverlay.getBoundingClientRect();
+            const touch = e.touches[0];
+            const scaleX = drawOverlay.width / rect.width; 
+            const scaleY = drawOverlay.height / rect.height; 
+            return { x: (touch.clientX - rect.left) * scaleX, y: (touch.clientY - rect.top) * scaleY }; 
+        };
+        drawOverlay.addEventListener('touchstart', (e) => { 
+            if (!isDrawingMode) return; 
+            e.preventDefault(); 
+            isDrawing = true; 
+            const pos = getTouchPos(e); 
+            lastX = pos.x; lastY = pos.y; 
+        }, { passive: false });
+        drawOverlay.addEventListener('touchmove', (e) => {
+            if (!isDrawing || !isDrawingMode) return; 
+            e.preventDefault();
+            const pos = getTouchPos(e);
+            drawCtx.beginPath(); drawCtx.lineCap = 'round'; drawCtx.lineJoin = 'round'; 
+            drawCtx.lineWidth = document.getElementById('brushSize').value; 
+            drawCtx.strokeStyle = document.getElementById('brushColor').value;
+            drawCtx.moveTo(lastX, lastY); drawCtx.lineTo(pos.x, pos.y); drawCtx.stroke(); 
+            lastX = pos.x; lastY = pos.y;
+        }, { passive: false });
+        drawOverlay.addEventListener('touchend', () => isDrawing = false);
+
+        function resetFilters(fullReset = true, doSave = true) {
+            currentFilters = { brightness: 100, contrast: 100, saturate: 100, blur: 0, vignette: 0, noise: 0, rotate: 0, flipH: 1, flipV: 1 };
+            sliders.forEach(s => s.value = s.id==='blur'||s.id==='vignette'||s.id==='noise' ? 0 : 100);
+            valSpans.forEach((v, i) => v.innerText = sliders[i].value + (i===3?'px':'%'));
+            if (fullReset) { frameSize.value = 0; watermarkText.value = ''; stickerSettings = { hasSticker: false, sizeScale: 20, posX: 50, posY: 50 }; stickerControls.style.display = 'none'; stickerInput.value = ''; }
+            applyFilters(); if (doSave && img.src) saveState();
+        }
+        document.getElementById('resetBtn').addEventListener('click', () => resetFilters(true, true));
+
+        const exportModal = document.getElementById('exportModal'), exportFormat = document.getElementById('exportFormat'), exportQuality = document.getElementById('exportQuality'), qualityContainer = document.getElementById('qualityContainer');
+        document.getElementById('openExportBtn').addEventListener('click', () => { if (!img.src) return alert("Silakan unggah gambar terlebih dahulu!"); if (isDrawingMode) toggleDrawBtn.click(); exportModal.classList.add('active'); });
+        document.getElementById('closeExportBtn').addEventListener('click', () => exportModal.classList.remove('active')); document.getElementById('cancelExportBtn').addEventListener('click', () => exportModal.classList.remove('active'));
+        exportFormat.addEventListener('change', (e) => { qualityContainer.style.display = e.target.value === 'image/png' ? 'none' : 'block'; });
+        exportQuality.addEventListener('input', (e) => { document.getElementById('quality-val').innerText = `${e.target.value}%`; });
+        document.getElementById('confirmExportBtn').addEventListener('click', () => {
+            const format = exportFormat.value, quality = parseInt(exportQuality.value) / 100, ext = format.split('/')[1];
+            const link = document.createElement('a'); link.download = `meditor-pro-${Date.now()}.${ext}`; link.href = canvas.toDataURL(format, quality); link.click(); exportModal.classList.remove('active');
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); if(!undoBtn.disabled) undoBtn.click(); }
+            if (e.ctrlKey && e.key === 'y') { e.preventDefault(); if(!redoBtn.disabled) redoBtn.click(); }
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); document.getElementById('openExportBtn').click(); }
+        });
+    </script>
 </body>
 </html>
