@@ -134,3 +134,7 @@ header { display: flex; justify-content: space-between; align-items: center; pad
     from { stroke-dashoffset: 100; }
     to { stroke-dashoffset: 0; }
 }
+/* Mencegah bug klik pada ikon power up di smartphone */
+#power-ups-area button * {
+    pointer-events: none;
+}

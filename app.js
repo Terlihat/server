@@ -217,6 +217,18 @@ function handleIncomingData(data) {
         showToast("Permintaan mulai ulang ditolak oleh lawan! 😢");
     }
     // ==========================================
+	
+	else if (data.type === 'sync_state') {
+        // Memaksa papan di HP ini agar 100% sama dengan HP pengirim
+        onetBoardData = data.board;
+        
+        // Perhatikan silang skor: 
+        // Skor 'myScore' milik pengirim adalah skor 'peerScore' di HP kita.
+        peerScore = data.myScore;
+        myScore = data.peerScore;
+        
+        renderBoard(onetBoardData); // renderBoard otomatis memperbarui UI skor
+    }
 
     else if (data.type === 'game_init') {
         // Reset timer dan waktu pada pihak yang menerima data papan (Player B)
@@ -535,6 +547,7 @@ function handlePeerAction(actionData) {
     if(!isGameOver) processGameLogic(actionData.index, true); 
 }
 
+// --- REPLACE 1: Fungsi Game Logic ---
 function processGameLogic(index, isFromPeer) {
     const tilesEl = document.querySelectorAll('.onet-tile');
     if (selectedIndex === null) {
@@ -566,7 +579,9 @@ function processGameLogic(index, isFromPeer) {
         setTimeout(() => {
             tilesEl[idx1].classList.add('hidden');
             tilesEl[idx2].classList.add('hidden');
-            applyGravity(); // Memanggil mekanik Candy Crush
+            
+            // PERUBAHAN: Kita kirim info siapa yang memicu pergerakan ini ke gravitasi
+            applyGravity(isFromPeer); 
         }, 300); 
         
         const now = Date.now();
@@ -592,15 +607,14 @@ function processGameLogic(index, isFromPeer) {
     }
 }
 
-// --- MEKANIK CANDY CRUSH: BUAH TURUN & RESPAWN BUAH BARU ---
-function applyGravity() {
+// --- REPLACE 2: Mekanik Candy Crush (Gravitasi & Respawn) ---
+function applyGravity(isFromPeer) {
     let changed = false;
     const themeKey = document.getElementById('theme-select').value;
     const currentIcons = THEMES[themeKey];
 
     for (let x = 0; x < COLS; x++) {
         let emptySpots = 0;
-        // Geser ke bawah
         for (let y = ROWS - 1; y >= 0; y--) {
             let idx = y * COLS + x;
             if (onetBoardData[idx].isCleared) {
@@ -612,7 +626,7 @@ function applyGravity() {
                 changed = true;
             }
         }
-        // Munculkan ikon baru dari atas (Respawn)
+        // Munculkan ikon acak baru
         for (let y = 0; y < emptySpots; y++) {
             let idx = y * COLS + x;
             let randomIcon = currentIcons[Math.floor(Math.random() * currentIcons.length)];
@@ -625,8 +639,20 @@ function applyGravity() {
             changed = true;
         }
     }
+    
     if (changed) {
-        setTimeout(() => { renderBoard(onetBoardData); }, 100); 
+        setTimeout(() => { 
+            renderBoard(onetBoardData); 
+            
+            if (!isFromPeer && conn) {
+                conn.send({ 
+                    type: 'sync_state', 
+                    board: onetBoardData, 
+                    myScore: myScore, 
+                    peerScore: peerScore 
+                });
+            }
+        }, 100); 
     }
 }
 
