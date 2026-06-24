@@ -20,7 +20,7 @@
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> SKYNET v2.1</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> SKYNET v2.2</div>
         <div class="header-actions">
             <button id="update-btn" style="display: none; background: var(--primary-dark); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; margin-right: 5px;"><i class="fa-solid fa-arrows-rotate"></i> Update App</button>
             <button id="install-btn"><i class="fa-solid fa-download"></i> Install App</button>
@@ -127,10 +127,13 @@
         </div>
     </div>
 	
-	<div id="video-container" style="display: none; position: fixed; bottom: 80px; right: 20px; width: 280px; background: var(--card-bg); border: 2px solid var(--primary); border-radius: 8px; overflow: hidden; z-index: 9999; box-shadow: var(--shadow);">
+	<div id="video-container" style="display: none; position: fixed; bottom: 80px; right: 20px; width: 280px; background: var(--card-bg); border: 2px solid var(--primary); border-radius: 8px; overflow: hidden; z-index: 9999; box-shadow: var(--shadow); transition: 0.3s;">
 		<div style="background: var(--primary); color: white; padding: 6px 10px; font-size: 0.8rem; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
 			<span><i class="fa-solid fa-broadcast-tower"></i> Live Stream</span>
-			<button onclick="closeScreenShare()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1rem;"><i class="fa-solid fa-times"></i></button>
+			<div>
+				<button onclick="toggleMaximizeVideo()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1rem; margin-right: 10px;"><i id="icon-maximize" class="fa-solid fa-expand"></i></button>
+				<button onclick="closeScreenShare()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1rem;"><i class="fa-solid fa-times"></i></button>
+			</div>
 		</div>
 		<video id="live-video" autoplay playsinline style="width: 100%; height: auto; display: block; background: #000;"></video>
 	</div>

@@ -138,3 +138,19 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 #power-ups-area button * {
     pointer-events: none;
 }
+/* Mode Perbesar untuk Video Screen Share */
+.video-maximized {
+    width: 100% !important;
+    height: 100% !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+    z-index: 10000 !important;
+    display: flex;
+    flex-direction: column;
+}
+.video-maximized video {
+    flex-grow: 1;
+    object-fit: contain; /* Agar video tidak terpotong */
+    background: #000;
+}

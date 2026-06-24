@@ -391,9 +391,7 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter'){ document.getElementById('btn-send-chat').click(); }
 });
 
-// ==========================================
 // PENERIMA SCREEN SHARE (PANGGILAN MASUK)
-// ==========================================
 peer.on('call', (call) => {
     let setuju = confirm("Lawan ingin membagikan layar perangkatnya. Apakah Anda ingin menontonnya?");
     if (setuju) {
@@ -418,9 +416,7 @@ peer.on('call', (call) => {
     }
 });
 
-// ==========================================
 // PENGIRIM SCREEN SHARE (PANGGILAN KELUAR)
-// ==========================================
 let localStream = null;
 let currentCall = null;
 
@@ -477,6 +473,24 @@ function closeScreenShare() {
     document.getElementById('video-container').style.display = 'none';
     if (videoEl.srcObject) {
         videoEl.srcObject = null;
+    }
+}
+
+// FITUR PERBESAR JENDELA VIDEO
+function toggleMaximizeVideo() {
+    const container = document.getElementById('video-container');
+    const icon = document.getElementById('icon-maximize');
+    
+    // Toggle class CSS
+    container.classList.toggle('video-maximized');
+    
+    // Ubah ikon dari 'expand' (perbesar) menjadi 'compress' (perkecil)
+    if (container.classList.contains('video-maximized')) {
+        icon.classList.remove('fa-expand');
+        icon.classList.add('fa-compress');
+    } else {
+        icon.classList.remove('fa-compress');
+        icon.classList.add('fa-expand');
     }
 }
 
