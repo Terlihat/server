@@ -20,7 +20,7 @@
 <body>
 
     <header>
-        <div class="brand"><i class="fa-solid fa-bolt"></i> SKYNET v2.2</div>
+        <div class="brand"><i class="fa-solid fa-bolt"></i> SKYNET v2.3</div>
         <div class="header-actions">
             <button id="update-btn" style="display: none; background: var(--primary-dark); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; margin-right: 5px;"><i class="fa-solid fa-arrows-rotate"></i> Update App</button>
             <button id="install-btn"><i class="fa-solid fa-download"></i> Install App</button>
@@ -137,6 +137,17 @@
 		</div>
 		<video id="live-video" autoplay playsinline style="width: 100%; height: auto; display: block; background: #000;"></video>
 	</div>
+	
+	<div class="page" id="page-canvas" style="display: none; height: 100vh; flex-direction: column;">
+		<div style="padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); display: flex; gap: 12px; align-items: center; z-index: 10;">
+			<input type="color" id="brush-color" value="#3b82f6" style="width: 40px; height: 40px; border: none; cursor: pointer;">
+			<input type="range" id="brush-size" min="1" max="20" value="4" style="flex-grow: 1;">
+			<button class="btn-outline" onclick="clearCanvas(true)" style="padding: 8px 12px; font-size: 0.8rem;"><i class="fa-solid fa-trash"></i> Bersih</button>
+		</div>
+		<div id="canvas-container" style="flex-grow: 1; width: 100%; position: relative; background: #ffffff;">
+			<canvas id="shared-board"></canvas>
+		</div>
+	</div>
 
     <!-- NAVBAR BAWAH -->
     <nav class="bottom-nav" id="bottom-bar">
@@ -146,6 +157,9 @@
         <div class="nav-item" id="nav-chat" onclick="switchPage('chat')">
             <i class="fa-solid fa-comments"></i><span>Obrolan</span>
         </div>
+		<div class="nav-item" id="nav-canvas" onclick="switchPage('canvas')">
+			<i class="fa-solid fa-palette"></i><span>Papan</span>
+		</div>
         <div class="nav-item" id="nav-game" onclick="switchPage('game')">
             <i class="fa-solid fa-gamepad"></i><span>Game</span>
         </div>

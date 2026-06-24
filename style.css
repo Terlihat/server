@@ -154,3 +154,13 @@ header { display: flex; justify-content: space-between; align-items: center; pad
     object-fit: contain; /* Agar video tidak terpotong */
     background: #000;
 }
+/* Gaya Khusus Papan Tulis Bersama */
+#shared-board {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none; /* Mencegah layar HP terscroll saat menggambar */
+    cursor: crosshair;
+}

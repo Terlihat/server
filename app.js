@@ -194,10 +194,19 @@ function handleIncomingData(data) {
         addToLog(`Diterima: ${incomingFileInfo.name}`, true); releaseWakeLock();
         setTimeout(() => { document.getElementById('progress-container').style.display = 'none'; document.getElementById('stats-area').style.display = 'none'; }, 2000);
     }
-
-    // ==========================================
-    // SISTEM VOTING ONET START/RESTART DI SINI
-    // ==========================================
+	else if (data.type === 'canvas_draw') {
+        const w = canvas.width;
+        const h = canvas.height;
+        drawOnCanvas(
+            data.x0 * w, data.y0 * h, 
+            data.x1 * w, data.y1 * h, 
+            data.color, data.size, 
+            false
+        );
+    }
+    else if (data.type === 'canvas_clear') {
+        clearCanvas(false);
+    }
     else if (data.type === 'request_restart') {
         let setuju = confirm("Lawan meminta untuk mulai ulang (restart) permainan. Apakah Anda setuju?");
         if (setuju) {
@@ -216,7 +225,6 @@ function handleIncomingData(data) {
     else if (data.type === 'restart_denied') {
         showToast("Permintaan mulai ulang ditolak oleh lawan! 😢");
     }
-    // ==========================================
 	
 	else if (data.type === 'sync_state') {
         // Memaksa papan di HP ini agar 100% sama dengan HP pengirim
@@ -391,7 +399,7 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter'){ document.getElementById('btn-send-chat').click(); }
 });
 
-// PENERIMA SCREEN SHARE (PANGGILAN MASUK)
+// --- 8. SCREEN SHARE ---
 peer.on('call', (call) => {
     let setuju = confirm("Lawan ingin membagikan layar perangkatnya. Apakah Anda ingin menontonnya?");
     if (setuju) {
@@ -494,7 +502,97 @@ function toggleMaximizeVideo() {
     }
 }
 
-// --- 8. GAME ONET 3.0 (ENDLESS CANDY CRUSH + PORTAL + TIMER UPDATE) ---
+// --- 9. PAPAN TULIS BERSAMA ---
+const canvas = document.getElementById('shared-board');
+const ctx = canvas ? canvas.getContext('2d') : null;
+let isDrawing = false;
+let lastX = 0; let lastY = 0;
+
+// Sesuaikan resolusi kanvas dengan ukuran layar asli perangkat
+function resizeCanvas() {
+    const container = document.getElementById('canvas-container');
+    if(container && canvas) {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        // Beri dasar putih
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+}
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 500); // Panggil sekali saat app pertama dimuat
+
+// Fungsi utama menggambar garis
+function drawOnCanvas(x0, y0, x1, y1, color, size, emit) {
+    if(!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.closePath();
+
+    // Jika emit = true, kita konversi piksel ke persentase lalu kirim ke lawan!
+    if (!emit || !conn || !conn.open) return;
+    conn.send({
+        type: 'canvas_draw',
+        x0: x0 / canvas.width,
+        y0: y0 / canvas.height,
+        x1: x1 / canvas.width,
+        y1: y1 / canvas.height,
+        color: color,
+        size: size
+    });
+}
+
+// Menangkap Koordinat Layar/Mouse
+function getPointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+// Rangkaian Event Jari/Mouse
+function startDraw(e) {
+    isDrawing = true;
+    const pos = getPointerPos(e);
+    lastX = pos.x; lastY = pos.y;
+}
+function moveDraw(e) {
+    if (!isDrawing) return;
+    e.preventDefault(); // Mencegah fitur pull-to-refresh di HP
+    const pos = getPointerPos(e);
+    const color = document.getElementById('brush-color').value;
+    const size = document.getElementById('brush-size').value;
+    
+    drawOnCanvas(lastX, lastY, pos.x, pos.y, color, size, true);
+    lastX = pos.x; lastY = pos.y;
+}
+function endDraw() { isDrawing = false; }
+
+if (canvas) {
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('mouseout', endDraw);
+    
+    canvas.addEventListener('touchstart', startDraw, {passive: false});
+    canvas.addEventListener('touchmove', moveDraw, {passive: false});
+    canvas.addEventListener('touchend', endDraw);
+}
+
+// Fungsi Bersihkan Papan
+function clearCanvas(emit = true) {
+    if(!ctx) return;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (emit && conn && conn.open) conn.send({ type: 'canvas_clear' });
+}
+
+// --- 10. GAME ONET 3.0 ---
 let onetBoardData = [];
 let selectedIndex = null;
 
@@ -507,7 +605,7 @@ const THEMES = {
 let myScore = 0; let peerScore = 0;
 let myCombo = 0; let myLastMatchTime = 0;
 let peerCombo = 0; let peerLastMatchTime = 0;
-let myPowerUps = { shuffle: 1, hint: 1, freeze: 1 };
+let myPowerUps = { shuffle: 3, hint: 5, freeze: 1 };
 let isFrozen = false;
 
 // --- SISTEM WAKTU ---
